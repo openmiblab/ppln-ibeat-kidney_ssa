@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ibeat-kidney-ssa"
+version = "0.0.0"
+dependencies = [
+  'tqdm',
+  'numpy',
+  'dbdicom',
+  'vreg',
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
