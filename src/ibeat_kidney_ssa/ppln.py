@@ -19,12 +19,10 @@ def run(proj):
 
     ppln.stage_1_normalize.run(BUILD)
     ppln.stage_2_display.run(BUILD)
-    # ppln.stage_3_normalize_npz.run(BUILD)
-    # ppln.stage_4_display.run(BUILD)
-    # ppln.stage_5_rotate.run(BUILD)
-    # ppln.stage_6_display.run(BUILD)
-    # ppln.stage_7_features.run(BUILD)
-    # ppln.stage_8_dice.run(BUILD)
+    ppln.stage_3_normalize_npz.run(BUILD)
+    ppln.stage_4_display.run(BUILD)
+    ppln.stage_5_features.run(BUILD)
+    ppln.stage_6_dice.run(BUILD)
 
 
 if __name__=='__main__':

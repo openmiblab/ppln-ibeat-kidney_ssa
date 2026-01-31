@@ -3,8 +3,6 @@ from . import (
     stage_2_display,
     stage_3_normalize_npz,
     stage_4_display,
-    stage_5_rotate,
-    stage_6_display,
-    stage_7_features,
-    stage_8_dice,
+    stage_5_features,
+    stage_6_dice,
 )

@@ -17,8 +17,8 @@ from ibeat_kidney_ssa.utils import normalize, data
 
 def run(build):
 
-    dir_input = os.path.join(build, 'kidney_ssa', 'stage_5_rotate')
-    dir_output = os.path.join(build, 'kidney_ssa', 'stage_8_dice')
+    dir_input = os.path.join(build, 'kidney_ssa', 'stage_3_normalize_npz')
+    dir_output = os.path.join(build, 'kidney_ssa', 'stage_6_dice')
     os.makedirs(dir_output, exist_ok=True)
 
     logging.basicConfig(

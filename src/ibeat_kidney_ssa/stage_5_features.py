@@ -15,8 +15,8 @@ from ibeat_kidney_ssa.utils import data
 def run(build):
 
     # Define folders
-    dir_input = os.path.join(build, 'kidney_ssa', 'stage_5_rotate') 
-    dir_output = os.path.join(build, 'kidney_ssa', 'stage_7_features')
+    dir_input = os.path.join(build, 'kidney_ssa', 'stage_3_normalize_npz') 
+    dir_output = os.path.join(build, 'kidney_ssa', 'stage_5_features')
     logging.basicConfig(
         filename=f"{dir_output}.log",
         level=logging.INFO,
