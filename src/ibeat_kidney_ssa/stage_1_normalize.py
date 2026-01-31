@@ -6,29 +6,25 @@ from tqdm import tqdm
 import dbdicom as db
 import vreg
 
-from utils import normalize
+from ibeat_kidney_ssa.utils import normalize
 
 
 
 def run(build):
 
-    build_path = os.path.join(build, 'kidney-ssa')
-    os.makedirs(build_path)
+    dir_input = os.path.join(build, 'kidney_shape', 'stage_3_edit')
+    dir_output = os.path.join(build, 'kidney_ssa', 'stage_1_normalize')
+    os.makedirs(dir_output, exist_ok=True)
 
     logging.basicConfig(
-        filename=os.path.join(build, 'kidney-ssa', 'stage_1_normalize.log'),
+        filename=f"{dir_output}.log",
         level=logging.INFO,
         format='%(asctime)s - %(levelname)s - %(message)s'
     )
 
-    dir_masks = os.path.join(build, 'kidney-shape', 'stage_3_edit')
-    dir_output = os.path.join(build, 'kidney-ssa', 'stage_1_normalize')
-    os.makedirs(dir_output, exist_ok=True)
-
     for database in ['Controls', 'Patients']:
-        db_masks = os.path.join(dir_masks, database) 
-        db_normalize = os.path.join(dir_output, database) 
-        run_db(db_masks, db_normalize)
+        db_masks = os.path.join(dir_input, database) 
+        run_db(db_masks, dir_output)
 
 
 def run_db(db_masks, db_normalize):
@@ -47,7 +43,7 @@ def run_db(db_masks, db_normalize):
         
             # Read data
             if (not rk_exists) or (not lk_exists):
-                vol = db.volume(kidney_label, verbose=0)
+                vol = db.volume(kidney_label, verbose=0).to_right_handed()
 
             # Compute right kidney
             if not rk_exists:

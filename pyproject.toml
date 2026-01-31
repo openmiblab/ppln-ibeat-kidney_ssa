@@ -8,8 +8,14 @@ version = "0.0.0"
 dependencies = [
   'tqdm',
   'numpy',
+  'scipy',
   'dbdicom',
   'vreg',
+  'pyvista', 
+  'scikit-learn',
+  'dask',
+  'numpyradiomics',
+  'pydmr',
 ]
 
 [tool.setuptools.packages.find]

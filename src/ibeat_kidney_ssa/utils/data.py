@@ -19,10 +19,45 @@ STUDY_CODE = {
 }
 
 SERIES_CODE = {
-    "normalized_right_kidney_mask": 'R',
-    "normalized_left_kidney_mask": 'L',
+    "normalized_kidney_right": 'R',
+    "normalized_kidney_left": 'L',
 }
 
+
+def sort_kidney_npz(kidney_masks):
+    """Sort masks and labels by the labels"""
+    # Get labels
+    kidney_labels = [label_npz_dbfile(f) for f in kidney_masks]
+    # Sort labels and masks by labels
+    sorted_pairs = sorted(zip(kidney_labels, kidney_masks))
+    # Extract sorted masks and labels
+    kidney_labels_sorted = [label for label, _ in sorted_pairs]
+    kidney_masks_sorted  = [mask  for _, mask in sorted_pairs]
+    return kidney_masks_sorted, kidney_labels_sorted
+
+def sort_kidney_series(kidney_masks):
+    kidney_labels = []
+    for mask_series in kidney_masks:
+        patient = mask_series[1]
+        study = mask_series[2][0]
+        kidney = 'L' if 'left' in mask_series[3][0] else 'R'
+        label = f"{patient}-{STUDY_CODE[study]}-{kidney}"
+        kidney_labels.append(label)
+    kidney_masks_sorted = [v for _, v in sorted(zip(kidney_labels, kidney_masks))]
+    return kidney_masks_sorted
+    
+def relpath_npz_dbfile(file):
+    
+    # Get subdirectories
+    studypath = os.path.dirname(file)
+    patientpath = os.path.dirname(studypath)
+
+    # Get names of patient, study and series
+    series = os.path.basename(file)
+    study = os.path.basename(studypath)
+    patient = os.path.basename(patientpath)
+
+    return os.path.join(patient, study, series)
 
 def parse_npz_dbfile(file) -> dict:
 
@@ -34,14 +69,48 @@ def parse_npz_dbfile(file) -> dict:
     kidney = os.path.basename(file)[:-4]
     kidney = kidney.split('__')[-1]
 
-    # Construct label
-    label = f"{patient}-{STUDY_CODE[study]}-{SERIES_CODE[kidney]}"
+    # Construct label 
+    if STUDY_CODE[study] not in ['V1', 'BL']:
+        raise ValueError(f'Series {patient}, {study}, {kidney} is not a baseline series')
+    k = 'L' if 'left' in kidney else 'R'
+    label = f"{patient}-{k}"
+
+    # Construct dict
     value = {
-        'Patient': patient, 
-        'Study': study, 
-        'Series': kidney,
+        'PatientID': patient, 
+        'StudyDescription': study, 
+        'SeriesDescription': kidney,
+        # TODO return StudyID and SeriesNumber
     }
     return label, value
+
+def label_db_series(series):
+    patient = series[1]
+    study = series[2][0]
+    kidney = 'L' if 'left' in series[3][0] else 'R'  
+    if STUDY_CODE[study] not in ['V1', 'BL']:
+        raise ValueError(f'Series {series[1:]} is not a baseline series')
+    # label = f"{patient}-{STUDY_CODE[study]}-{kidney}"
+    label = f"{patient}-{kidney}" 
+    return label
+
+def label_npz_dbfile(file) -> dict:
+
+    # Parse file path
+    patient = os.path.basename(os.path.dirname(os.path.dirname(file)))
+    patient = patient.split('__')[-1]
+    study = os.path.basename(os.path.dirname(file))
+    study = study.split('__')[-1]
+    kidney = os.path.basename(file)[:-4]
+    kidney = kidney.split('__')[-1]
+
+    # Construct label
+    if STUDY_CODE[study] not in ['V1', 'BL']:
+        raise ValueError(f'Series {patient}, {study}, {kidney} is not a baseline series')
+    # label = f"{patient}-{STUDY_CODE[study]}-{k}"
+    kidney = 'L' if 'left' in kidney else 'R'
+    label = f"{patient}-{kidney}" 
+    return label
 
 
 def dixon_record():

@@ -16,29 +16,6 @@ import utils.data
 
 
 
-# def principal_component_analysis(build_path):
-
-#     n_components = 10
-#     n_clusters = 3
-    
-#     resultspath = os.path.join(build_path, 'kidneyvol', 'stage_7_shape_analysis')
-
-#     for kidney in ['left', 'right']:
-#         df_file = os.path.join(resultspath, f'{kidney}_kidney_features.csv')
-#         df_features = pd.read_csv(df_file)
-
-#         # Run PCA on feature matrix
-#         pca = PCA(n_components=n_components)
-#         features_reduced = pca.fit_transform(df_features.values)
-
-#         # Cluster shapes in PCA space
-#         kmeans = KMeans(n_clusters=n_clusters, random_state=0, n_init=10)
-#         labels = kmeans.fit_predict(features_reduced)
-
-#         # Reconstruct shapes for the different features
-#         # coeffs = features_reduced[0].reshape((32,32,32)) 
-#         # mask_recon = sdf.mask_from_coeffs(coeffs)
-
 
 def compute_correlations(project_path, debug=False):
 

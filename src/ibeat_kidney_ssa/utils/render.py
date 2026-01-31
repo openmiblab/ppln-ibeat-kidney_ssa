@@ -2,6 +2,7 @@ import numpy as np
 import pyvista as pv
 import time
 from skimage import measure
+#from pyvistaqt import BackgroundPlotter
 
 
 def rotation_vector_to_matrix(rot_vec):
@@ -213,38 +214,101 @@ def display_volume(
 
 
 
-import numpy as np
-import pyvista as pv
 
-def compute_principal_axes(mask, voxel_size):
+
+# def _old_compute_principal_axes(mask, voxel_size):
+#     """
+#     Compute centroid and orthonormal principal axes (right-handed) for a 3D binary mask.
+#     Returns centroid (world coords) and axes (3x3 matrix, columns are orthonormal axes).
+#     """
+#     coords = np.argwhere(mask > 0).astype(float)  # (N,3) indices (z,y,x) or (i,j,k)
+#     if coords.size == 0:
+#         raise ValueError("Empty mask provided to compute_principal_axes.")
+#     # Convert to physical/world coordinates by multiplying by voxel spacing
+#     voxel_size = np.asarray(voxel_size, float)
+#     coords_world = coords * voxel_size  # broadcasting (N,3) * (3,) -> (N,3)
+
+#     centroid = coords_world.mean(axis=0)
+#     centered = coords_world - centroid  # (N,3)
+
+#     # SVD on centered coords: Vt rows are principal directions; columns of V are axes
+#     U, S, Vt = np.linalg.svd(centered, full_matrices=False)
+#     axes = Vt.T  # shape (3,3) columns are principal directions (unit length)
+
+#     # Ensure orthonormal (numerical safety) via QR or re-normalize columns
+#     # Re-normalize columns
+#     for i in range(3):
+#         axes[:, i] = axes[:, i] / (np.linalg.norm(axes[:, i]) + 1e-12)
+
+#     # Make right-handed: if determinant negative, flip third axis
+#     if np.linalg.det(axes) < 0:
+#         axes[:, 2] = -axes[:, 2]
+
+#     return centroid, axes
+
+def compute_principal_axes(mask, voxel_size=(1.0, 1.0, 1.0)):
     """
-    Compute centroid and orthonormal principal axes (right-handed) for a 3D binary mask.
-    Returns centroid (world coords) and axes (3x3 matrix, columns are orthonormal axes).
+    Calculates the physical centroid and normalized, right-handed principal axes 
+    of a 3D binary mask.
+
+    Parameters:
+    -----------
+    mask : np.ndarray
+        A 3D binary array (boolean or 0/1) where True indicates the object.
+    voxel_size : tuple or list of 3 floats
+        The voxel size in physical units (e.g., [dz, dy, dx] or [dx, dy, dz]).
+        Must match the order of dimensions in the mask array.
+
+    Returns:
+    --------
+    centroid : np.ndarray
+        A (3,) array containing the center of mass in physical coordinates.
+    axes : np.ndarray
+        A (3, 3) matrix where each column represents a principal axis vector.
+        - Column 0: Major axis (largest variance)
+        - Column 1: Intermediate axis
+        - Column 2: Minor axis (smallest variance)
+        The system is guaranteed to be right-handed and normalized.
     """
-    coords = np.argwhere(mask > 0).astype(float)  # (N,3) indices (z,y,x) or (i,j,k)
-    if coords.size == 0:
-        raise ValueError("Empty mask provided to compute_principal_axes.")
-    # Convert to physical/world coordinates by multiplying by voxel spacing
-    voxel_size = np.asarray(voxel_size, float)
-    coords_world = coords * voxel_size  # broadcasting (N,3) * (3,) -> (N,3)
+    # 1. Get indices of the non-zero voxels (N, 3)
+    indices = np.argwhere(mask)
+    
+    if indices.shape[0] < 3:
+        raise ValueError("Mask must contain at least 3 points to define 3D axes.")
 
-    centroid = coords_world.mean(axis=0)
-    centered = coords_world - centroid  # (N,3)
+    # 2. Convert to physical coordinates
+    # We multiply the indices by the voxel_size to handle anisotropic voxels correctly
+    points = indices * np.array(voxel_size)
 
-    # SVD on centered coords: Vt rows are principal directions; columns of V are axes
-    U, S, Vt = np.linalg.svd(centered, full_matrices=False)
-    axes = Vt.T  # shape (3,3) columns are principal directions (unit length)
+    # 3. Calculate Centroid
+    centroid = np.mean(points, axis=0)
 
-    # Ensure orthonormal (numerical safety) via QR or re-normalize columns
-    # Re-normalize columns
-    for i in range(3):
-        axes[:, i] = axes[:, i] / (np.linalg.norm(axes[:, i]) + 1e-12)
+    # 4. Center the points (subtract centroid)
+    points_centered = points - centroid
 
-    # Make right-handed: if determinant negative, flip third axis
-    if np.linalg.det(axes) < 0:
-        axes[:, 2] = -axes[:, 2]
+    # 5. Compute Covariance Matrix
+    # rowvar=False means each column is a variable (x, y, z), each row is an observation
+    cov_matrix = np.cov(points_centered, rowvar=False)
 
-    return centroid, axes
+    # 6. Eigendecomposition
+    # eigh is optimized for symmetric matrices (like covariance matrices)
+    eigenvalues, eigenvectors = np.linalg.eigh(cov_matrix)
+
+    # 7. Sort axes by Eigenvalues (descending order)
+    # eigh returns eigenvalues in ascending order, so we reverse them
+    # We want: Index 0 = Major Axis (Largest eigenvalue)
+    sort_indices = np.argsort(eigenvalues)[::-1]
+    
+    sorted_eigenvalues = eigenvalues[sort_indices]
+    sorted_vectors = eigenvectors[:, sort_indices]
+
+    # 8. Enforce Right-Handed Coordinate System
+    # Calculate the determinant. If -1, the system is left-handed (reflection).
+    # We flip the minor axis (last column) to fix this.
+    if np.linalg.det(sorted_vectors) < 0:
+        sorted_vectors[:, -1] *= -1
+
+    return centroid, sorted_vectors
 
 def add_principal_axes(plotter, centroid_world, axes, bounds, colors=("red","green","blue")):
     """
@@ -296,6 +360,98 @@ def add_principal_axes(plotter, centroid_world, axes, bounds, colors=("red","gre
 #         p2 = centroid_world + direction * scale
 #         line = pv.Line(p1, p2)
 #         plotter.add_mesh(line, color=colors[i], line_width=4, opacity=0.8)
+
+
+def display_two_normalized_kidneys(kidney1, kidney2,
+                        kidney1_voxel_size=(1.0,1.0,1.0),
+                        kidney2_voxel_size=(1.0,1.0,1.0),
+                        title='Two normalized_kidneys'):
+    """
+    Visualize two shapes and overlay computed principal axes.
+    """
+    kidney1_voxel_size = np.asarray(kidney1_voxel_size, float)
+    kidney2_voxel_size = np.asarray(kidney2_voxel_size, float)
+
+    # compute centroids & axes
+    centroid_1, axes_1 = compute_principal_axes(kidney1, kidney1_voxel_size)
+    centroid_2, axes_2 = compute_principal_axes(kidney2, kidney2_voxel_size)
+
+    plotter = pv.Plotter(window_size=(1000,600), shape=(1,2))
+    plotter.background_color = 'white'
+
+    # Original
+    vol_1 = pv.wrap(kidney1.astype(float))
+    vol_1.spacing = kidney1_voxel_size  # ensures world coordinates are correct
+    vol_1_surf = vol_1.contour(isosurfaces=[0.5])
+
+    plotter.subplot(0,0)
+    plotter.add_text(f"{title} (1)", font_size=12)
+    plotter.add_mesh(vol_1_surf, color='lightblue', opacity=1.0, style='surface', ambient=0.1, diffuse=0.9)
+    # box
+    plotter.add_mesh(pv.Box(bounds=vol_1.bounds), color='black', style='wireframe', line_width=2)
+    add_axes(plotter, xlabel='O', ylabel='L', zlabel='T', color=("red", "blue", "green"))
+    add_principal_axes(plotter, centroid_1, axes_1, bounds=vol_1.bounds, colors=("black","black","black"))
+
+    # Normalized
+    vol_2 = pv.wrap(kidney2.astype(float))
+    vol_2.spacing = kidney2_voxel_size
+    vol_2_surf = vol_2.contour(isosurfaces=[0.5])
+
+    plotter.subplot(0,1)
+    plotter.add_text(f"{title} (2)", font_size=12)
+    plotter.add_mesh(vol_2_surf, color='lightblue', opacity=1.0, style='surface', ambient=0.1, diffuse=0.9)
+    plotter.add_mesh(pv.Box(bounds=vol_2.bounds), color='black', style='wireframe', line_width=2)
+    add_axes(plotter, xlabel='O', ylabel='L', zlabel='T', color=("red", "blue", "green"))
+    add_principal_axes(plotter, centroid_2, axes_2, bounds=vol_2.bounds, colors=("black","black","black"))
+
+    plotter.camera_position = 'iso'
+    plotter.show()
+
+def display_two_kidneys(kidney1, kidney2,
+                        kidney1_voxel_size=(1.0,1.0,1.0),
+                        kidney2_voxel_size=(1.0,1.0,1.0),
+                        title1='Kidney 1', title2='Kidney 2'):
+    """
+    Visualize two shapes and overlay computed principal axes.
+    """
+    kidney1_voxel_size = np.asarray(kidney1_voxel_size, float)
+    kidney2_voxel_size = np.asarray(kidney2_voxel_size, float)
+
+    # compute centroids & axes
+    centroid_1, axes_1 = compute_principal_axes(kidney1, kidney1_voxel_size)
+    centroid_2, axes_2 = compute_principal_axes(kidney2, kidney2_voxel_size)
+
+    plotter = pv.Plotter(window_size=(1000,600), shape=(1,2))
+    plotter.background_color = 'white'
+
+    # Original
+    vol_1 = pv.wrap(kidney1.astype(float))
+    vol_1.spacing = kidney1_voxel_size  # ensures world coordinates are correct
+    vol_1_surf = vol_1.contour(isosurfaces=[0.5])
+
+    plotter.subplot(0,0)
+    plotter.add_text(f"{title1}", font_size=12)
+    plotter.add_mesh(vol_1_surf, color='lightblue', opacity=1.0, style='surface', ambient=0.1, diffuse=0.9)
+    # box
+    plotter.add_mesh(pv.Box(bounds=vol_1.bounds), color='black', style='wireframe', line_width=2)
+    add_axes(plotter, xlabel='L', ylabel='F', zlabel='P', color=("red", "green", "blue"))
+    add_principal_axes(plotter, centroid_1, axes_1, bounds=vol_1.bounds, colors=("black","black","black"))
+
+    # Normalized
+    vol_2 = pv.wrap(kidney2.astype(float))
+    vol_2.spacing = kidney2_voxel_size
+    vol_2_surf = vol_2.contour(isosurfaces=[0.5])
+
+    plotter.subplot(0,1)
+    plotter.add_text(f"{title2}", font_size=12)
+    plotter.add_mesh(vol_2_surf, color='lightblue', opacity=1.0, style='surface', ambient=0.1, diffuse=0.9)
+    plotter.add_mesh(pv.Box(bounds=vol_2.bounds), color='black', style='wireframe', line_width=2)
+    add_axes(plotter, xlabel='L', ylabel='F', zlabel='P', color=("red", "green", "blue"))
+    add_principal_axes(plotter, centroid_2, axes_2, bounds=vol_2.bounds, colors=("black","black","black"))
+
+    plotter.camera_position = 'iso'
+    plotter.show()
+
 
 def display_kidney_normalization(kidney, kidney_norm,
                                  kidney_voxel_size=(1.0,1.0,1.0),
