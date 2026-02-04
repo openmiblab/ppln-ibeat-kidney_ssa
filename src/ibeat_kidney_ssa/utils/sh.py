@@ -1,13 +1,13 @@
 import numpy as np
-
-
 from skimage import measure, morphology
 from scipy.spatial import cKDTree
 from scipy.ndimage import binary_fill_holes
-
 from skimage import measure
 import trimesh
 import pyshtools as pysh
+from skimage.measure import marching_cubes
+from scipy.interpolate import griddata
+from scipy.ndimage import binary_fill_holes
 
 
 # ----------------------
@@ -76,7 +76,109 @@ def surface_distances(vol_a, vol_b, spacing=(1.0,1.0,1.0)):
 
 
 
-def decompose(volume, lmax=15):
+
+
+
+def sh_reconstruct_surface_from_coeffs(coeffs, lmax = 8):
+
+    # Suppose coeffs is your SHCoeffs object (from pysh)
+    coeffs_array = coeffs.to_array()[:, :lmax+1, :lmax+1]
+    coeffs_trunc = pysh.SHCoeffs.from_array(coeffs_array)
+
+    # Reconstruct the spherical function
+    grid_recon = coeffs_trunc.expand(grid='DH')  # gives SHGrid
+    radii_recon = grid_recon.to_array()
+
+    # -----------------------
+    # 2. Convert back to 3D surface
+    # -----------------------
+    # Define the same theta/phi grid
+    n_theta, n_phi = radii_recon.shape
+    theta = np.linspace(0, np.pi, n_theta)       # polar
+    phi = np.linspace(0, 2*np.pi, n_phi)         # azimuth
+    theta_grid, phi_grid = np.meshgrid(theta, phi, indexing="ij")
+
+    # Convert spherical coords (r, theta, phi) -> Cartesian
+    x = radii_recon * np.sin(theta_grid) * np.cos(phi_grid)
+    y = radii_recon * np.sin(theta_grid) * np.sin(phi_grid)
+    z = radii_recon * np.cos(theta_grid)
+
+    # Flatten for point cloud
+    points = np.vstack([x.ravel(), y.ravel(), z.ravel()]).T
+
+    # -----------------------
+    # 3. Create mesh from point cloud
+    # -----------------------
+    # Use alpha shape or ball pivoting; simplest: convex hull for now
+    recon_mesh = trimesh.convex.convex_hull(points)
+
+    # Save or show mesh
+    recon_mesh.export("kidney_recon_lmax8.ply")
+
+
+
+
+
+
+def power_spectrum(coeffs):
+    # Real and rotationally invariant
+
+    # Suppose we already computed coeffs from SH expansion (see previous example)
+    # coeffs is an SHCoeffs object from pyshtools
+
+    # Convert coefficients to array: shape (2, lmax+1, lmax+1)
+    # axis 0: [0]=real part, [1]=imag part
+    coeffs_array = coeffs.to_array()
+
+    # -----------------------
+    # 1. Compute rotation-invariant power spectrum
+    # -----------------------
+    lmax = coeffs.lmax
+    power_spectrum = []
+
+    for l in range(lmax + 1):
+        # Get coefficients for this degree l across all orders m
+        c_l = coeffs_array[:, l, :l+1]  # shape (2, l+1)
+        # Combine real + imaginary into complex
+        c_l_complex = c_l[0] + 1j * c_l[1]
+        # Sum of squared magnitudes across m
+        P_l = np.sqrt(np.sum(np.abs(c_l_complex)**2))
+        power_spectrum.append(P_l)
+
+    power_spectrum = np.array(power_spectrum)
+
+    return power_spectrum
+
+
+def cosine_similarity(a, b):
+    # Simularity between two descriptor vectors - distance between shapes
+    return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+
+def _sh_reconstruct_shape(vol_orig, spacing, lmax=200):
+
+    # 1. Fit spherical harmonics
+    coeffs, centroid, max_extent = sh_compute_coeffs(vol_orig, lmax=lmax)
+
+    # coeffs contains complex SH coefficients = Fourier shape descriptors
+    # -----------------------
+    # 6. Use real descriptors for comparison
+    # -----------------------
+    descriptor_vector_real = coeffs.to_array().ravel().real
+    descriptor_vector_power = power_spectrum(coeffs)
+
+    vol_rec = sh_reconstruct_volume_from_coeffs(coeffs, vol_orig.shape, centroid, max_extent, lmax=lmax)
+
+    # 4. Compute evaluation metrics
+    dice = dice_coefficient(vol_orig, vol_rec)
+    hausdorff, mean_dist = surface_distances(vol_orig, vol_rec, spacing=spacing)
+
+    print('Dice: ', dice)
+
+    return vol_rec, {'p1': [1, 'par1', '%', 'float'], 'p2': [1, 'par2', '%', 'float']}
+
+
+
+def sh_compute_coeffs(volume, lmax=15):
     # -----------------------
     # 1. Original volume
     # -----------------------
@@ -120,45 +222,7 @@ def decompose(volume, lmax=15):
     return coeffs_trunc, centroid, max_extent
 
 
-def reconstruct_surface_from_coeffs(coeffs, lmax = 8):
-
-    # Suppose coeffs is your SHCoeffs object (from pysh)
-    coeffs_array = coeffs.to_array()[:, :lmax+1, :lmax+1]
-    coeffs_trunc = pysh.SHCoeffs.from_array(coeffs_array)
-
-    # Reconstruct the spherical function
-    grid_recon = coeffs_trunc.expand(grid='DH')  # gives SHGrid
-    radii_recon = grid_recon.to_array()
-
-    # -----------------------
-    # 2. Convert back to 3D surface
-    # -----------------------
-    # Define the same theta/phi grid
-    n_theta, n_phi = radii_recon.shape
-    theta = np.linspace(0, np.pi, n_theta)       # polar
-    phi = np.linspace(0, 2*np.pi, n_phi)         # azimuth
-    theta_grid, phi_grid = np.meshgrid(theta, phi, indexing="ij")
-
-    # Convert spherical coords (r, theta, phi) -> Cartesian
-    x = radii_recon * np.sin(theta_grid) * np.cos(phi_grid)
-    y = radii_recon * np.sin(theta_grid) * np.sin(phi_grid)
-    z = radii_recon * np.cos(theta_grid)
-
-    # Flatten for point cloud
-    points = np.vstack([x.ravel(), y.ravel(), z.ravel()]).T
-
-    # -----------------------
-    # 3. Create mesh from point cloud
-    # -----------------------
-    # Use alpha shape or ball pivoting; simplest: convex hull for now
-    recon_mesh = trimesh.convex.convex_hull(points)
-
-    # Save or show mesh
-    recon_mesh.export("kidney_recon_lmax8.ply")
-
-
-
-def reconstruct_volume_from_coeffs(coeffs, vol_shape, centroid, max_extent, lmax = 15):
+def sh_reconstruct_volume_from_coeffs(coeffs, vol_shape, centroid, max_extent, lmax = 15):
 
     coeffs_array = coeffs.to_array()[:, :lmax+1, :lmax+1]
     coeffs_trunc = pysh.SHCoeffs.from_array(coeffs_array)
@@ -197,58 +261,184 @@ def reconstruct_volume_from_coeffs(coeffs, vol_shape, centroid, max_extent, lmax
     return volume_recon
 
 
-def power_spectrum(coeffs):
-    # Real and rotationally invariant
+def sh_reconstruct_shape(mask_orig, lmax=200):
 
-    # Suppose we already computed coeffs from SH expansion (see previous example)
-    # coeffs is an SHCoeffs object from pyshtools
+    coeffs, centroid, max_extent = sh_compute_coeffs(mask_orig, lmax=lmax)
+    mask_rec = sh_reconstruct_volume_from_coeffs(coeffs, mask_orig.shape, centroid, max_extent, lmax=lmax)
 
-    # Convert coefficients to array: shape (2, lmax+1, lmax+1)
-    # axis 0: [0]=real part, [1]=imag part
-    coeffs_array = coeffs.to_array()
+    return mask_rec
 
-    # -----------------------
-    # 1. Compute rotation-invariant power spectrum
-    # -----------------------
-    lmax = coeffs.lmax
-    power_spectrum = []
 
+
+
+import numpy as np
+import pyshtools as pysh
+from skimage.measure import marching_cubes
+from scipy.ndimage import gaussian_filter, binary_fill_holes, binary_dilation
+from scipy.special import sph_harm
+
+def get_inflated_mapping(verts, faces, iterations=80):
+    """
+    Inflates the mesh to a sphere to get unique (theta, phi) for every vertex.
+    Preserves topology so we don't get overlapping rays in the hollow.
+    """
+    smooth_verts = verts.copy()
+    # Simple adjacency graph
+    edges = np.concatenate([faces[:, [0, 1]], faces[:, [1, 2]], faces[:, [2, 0]]])
+    
+    n_verts = len(verts)
+    
+    # Fast vectorized smoothing
+    for _ in range(iterations):
+        # Calculate face centers
+        face_centers = smooth_verts[faces].mean(axis=1)
+        
+        # Accumulate neighbor pulls
+        v_sums = np.zeros_like(smooth_verts)
+        v_counts = np.zeros(n_verts)
+        
+        np.add.at(v_sums, faces, face_centers[:, None, :])
+        np.add.at(v_counts, faces, 1)
+        
+        v_counts[v_counts==0] = 1
+        v_avgs = v_sums / v_counts[:, None]
+        
+        # Move vertices
+        smooth_verts = 0.5 * smooth_verts + 0.5 * v_avgs
+        
+        # Re-center and normalize to keep numerics healthy
+        smooth_verts -= smooth_verts.mean(axis=0)
+        rads = np.linalg.norm(smooth_verts, axis=1)
+        smooth_verts /= (rads[:, None] + 1e-9)
+
+    # Convert to Theta/Phi
+    Xc, Yc, Zc = smooth_verts[:,0], smooth_verts[:,1], smooth_verts[:,2]
+    Theta = np.arccos(np.clip(Zc, -1, 1))
+    Phi = np.arctan2(Yc, Xc) % (2*np.pi)
+    
+    return Theta, Phi
+
+def fit_coeffs_least_squares(verts, theta, phi, lmax):
+    """
+    Solves Y * C = V for C using Least Squares.
+    Y is the matrix of spherical harmonics evaluated at (theta, phi).
+    V is the vertex coordinates (x, y, or z).
+    """
+    # 1. Construct the Design Matrix Y (N_verts x N_coeffs)
+    # Total coefficients = (lmax + 1)^2
+    n_coeffs = (lmax + 1) ** 2
+    n_verts = len(verts)
+    
+    # We construct Y column by column.
+    # Mapping convention: pyshtools usually uses complex or real SH. 
+    # For simplicity in reconstruction, we use real SH from scipy or manual.
+    # BUT, to keep compatible with your pyshtools reconstruction, we should use pysh layouts.
+    # However, building the pysh matrix manually is complex.
+    # FAST PATH: We simply use standard Real Spherical Harmonics here.
+    
+    Y_matrix = np.zeros((n_verts, n_coeffs))
+    
+    col_idx = 0
+    # Loop l from 0 to lmax
     for l in range(lmax + 1):
-        # Get coefficients for this degree l across all orders m
-        c_l = coeffs_array[:, l, :l+1]  # shape (2, l+1)
-        # Combine real + imaginary into complex
-        c_l_complex = c_l[0] + 1j * c_l[1]
-        # Sum of squared magnitudes across m
-        P_l = np.sqrt(np.sum(np.abs(c_l_complex)**2))
-        power_spectrum.append(P_l)
+        # Loop m from -l to l
+        for m in range(-l, l + 1):
+            # Evaluate Real Spherical Harmonic
+            # Scipy returns complex; we convert to Real Ylm
+            harm = sph_harm(m, l, phi, theta)
+            
+            if m > 0:
+                y_real = np.sqrt(2) * np.real(harm)
+            elif m < 0:
+                y_real = np.sqrt(2) * np.imag(harm)
+            else: # m == 0
+                y_real = np.real(harm)
+                
+            Y_matrix[:, col_idx] = y_real
+            col_idx += 1
+            
+    # 2. Solve Least Squares: Y * c = x
+    # We solve for X, Y, Z simultaneously
+    # coeffs shape: (N_coeffs, 3)
+    coeffs, residuals, rank, s = np.linalg.lstsq(Y_matrix, verts, rcond=None)
+    
+    return coeffs
 
-    power_spectrum = np.array(power_spectrum)
+def reconstruct_from_ls_coeffs(coeffs, lmax, vol_shape, centroid, max_extent, density=4):
+    """
+    Reconstructs volume from the Least Squares coefficients.
+    """
+    # 1. Create dense reconstruction grid
+    recon_lmax = lmax * density
+    theta_grid = np.linspace(0, np.pi, recon_lmax)
+    phi_grid = np.linspace(0, 2*np.pi, recon_lmax * 2)
+    T, P = np.meshgrid(theta_grid, phi_grid, indexing='ij')
+    
+    # Flatten for matrix multiplication
+    T_flat = T.flatten()
+    P_flat = P.flatten()
+    n_points = len(T_flat)
+    n_coeffs = (lmax + 1) ** 2
+    
+    # 2. Build Reconstruction Matrix (reuse basis function logic)
+    Y_recon = np.zeros((n_points, n_coeffs))
+    col_idx = 0
+    for l in range(lmax + 1):
+        for m in range(-l, l + 1):
+            harm = sph_harm(m, l, P_flat, T_flat) # Note: scipy takes (m, l, phi, theta)
+            if m > 0: y_r = np.sqrt(2) * np.real(harm)
+            elif m < 0: y_r = np.sqrt(2) * np.imag(harm)
+            else: y_r = np.real(harm)
+            Y_recon[:, col_idx] = y_r
+            col_idx += 1
+            
+    # 3. Compute Coordinates: X = Y_recon * c_x
+    # coeffs is (N_coeffs, 3) -> X, Y, Z
+    coords = Y_recon @ coeffs
+    
+    # Denormalize
+    coords = (coords * max_extent) + centroid
+    
+    # 4. Voxelize
+    ix = np.round(coords[:, 0]).astype(int)
+    iy = np.round(coords[:, 1]).astype(int)
+    iz = np.round(coords[:, 2]).astype(int)
+    
+    nx, ny, nz = vol_shape
+    valid = (ix >= 0) & (ix < nx) & (iy >= 0) & (iy < ny) & (iz >= 0) & (iz < nz)
+    
+    vol = np.zeros(vol_shape, dtype=np.uint8)
+    vol[ix[valid], iy[valid], iz[valid]] = 1
+    
+    # Close gaps and fill
+    vol = binary_dilation(vol, iterations=2)
+    vol = binary_fill_holes(vol).astype(np.uint8)
+    
+    return vol
 
-    return power_spectrum
-
-
-def cosine_similarity(a, b):
-    # Simularity between two descriptor vectors - distance between shapes
-    return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
-
-def reconstruct_shape(vol_orig, spacing, lmax=200):
-
-    # 1. Fit spherical harmonics
-    coeffs, centroid, max_extent = decompose(vol_orig, lmax=lmax)
-
-    # coeffs contains complex SH coefficients = Fourier shape descriptors
-    # -----------------------
-    # 6. Use real descriptors for comparison
-    # -----------------------
-    descriptor_vector_real = coeffs.to_array().ravel().real
-    descriptor_vector_power = power_spectrum(coeffs)
-
-    vol_rec = reconstruct_volume_from_coeffs(coeffs, vol_orig.shape, centroid, max_extent, lmax=lmax)
-
-    # 4. Compute evaluation metrics
-    dice = dice_coefficient(vol_orig, vol_rec)
-    hausdorff, mean_dist = surface_distances(vol_orig, vol_rec, spacing=spacing)
-
-    print('Dice: ', dice)
-
-    return vol_rec, {'p1': [1, 'par1', '%', 'float'], 'p2': [1, 'par2', '%', 'float']}
+def reconstruct_shape_vsh(mask_orig, lmax=20):
+    """
+    Wrapper using Least Squares fitting to preserve concavities.
+    """
+    # 1. Mesh Extraction
+    vol_float = gaussian_filter(mask_orig.astype(float), sigma=1.0)
+    verts, faces, _, _ = marching_cubes(vol_float, level=0.5)
+    
+    centroid = verts.mean(axis=0)
+    verts_centered = verts - centroid
+    max_extent = np.max(np.linalg.norm(verts_centered, axis=1))
+    verts_norm = verts_centered / max_extent
+    
+    # 2. Parameterization (Inflation)
+    # This ensures unique angles for the hollow area
+    theta, phi = get_inflated_mapping(verts_norm, faces, iterations=100)
+    
+    # 3. Least Squares Fitting
+    # Fits the basis functions directly to the vertex positions.
+    # This captures the "dent" much better than interpolation.
+    coeffs = fit_coeffs_least_squares(verts_norm, theta, phi, lmax)
+    
+    # 4. Reconstruction
+    mask_rec = reconstruct_from_ls_coeffs(coeffs, lmax, mask_orig.shape, centroid, max_extent)
+    
+    return mask_rec

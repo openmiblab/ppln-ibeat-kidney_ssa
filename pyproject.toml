@@ -8,14 +8,20 @@ version = "0.0.0"
 dependencies = [
   'tqdm',
   'numpy',
+  'dask',
   'scipy',
-  'dbdicom',
   'vreg',
   'pyvista', 
   'scikit-learn',
-  'dask',
   'numpyradiomics',
+  'dbdicom',
   'pydmr',
+  'scikit-image',
+  'trimesh',
+  'moviepy',
+  'dask-ml',
+  'zarr',
+  'psutil',
 ]
 
 [tool.setuptools.packages.find]

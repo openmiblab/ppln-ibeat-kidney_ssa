@@ -4,74 +4,104 @@ from scipy.ndimage import rotate
 from tqdm import tqdm
 
 
-# -------------------------------
-# Dice coefficient
-# -------------------------------
+from ibeat_kidney_ssa.utils.metrics import dice_coefficient
 
 
-def covariance(x, y):
-    """
-    Compute the covariance between two 1D vectors x and y.
 
-    Parameters
-    ----------
-    x : array-like, shape (n,)
-    y : array-like, shape (n,)
+# def invariant_dice_coefficient(
+#     mask_ref: np.ndarray,
+#     mask_to_rotate: np.ndarray,
+#     axis: int = 2, #rotation in Z axis, (X,Y,Z)
+#     angle_range=(0.0, 360.0),
+#     angle_step: float = 1.0,
+#     return_angle: bool = False,
+#     return_mask: bool = False,
+#     verbose: int = 0,
+# ):
+#     """
+#     Rotate a 3D mask around a selected axis and compute the Dice score
+#     across all angles. By default returns only the maximum Dice score.
 
-    Returns
-    -------
-    cov : float
-        Covariance between x and y.
-    """
-    x = np.asarray(x)
-    y = np.asarray(y)
-    if x.shape != y.shape:
-        raise ValueError("x and y must have the same shape")
-    n = x.size
-    cov = np.sum((x - x.mean()) * (y - y.mean())) / (n - 1)
-    return cov
+#     Parameters
+#     ----------
+#     mask_ref : np.ndarray
+#         Reference 3D binary mask (fixed).
+#     mask_to_rotate : np.ndarray
+#         Moving 3D binary mask to be rotated.
+#     axis : int, default=2
+#         Axis of rotation (0, 1, or 2).
+#     angle_range : tuple, default=(0.0, 360.0)
+#         Range of rotation angles.
+#     angle_step : float, default=1.0
+#         Step size in degrees.
+#     return_angle : bool, default=False
+#         If True, also return the best angle.
+#     return_mask : bool, default=False
+#         If True, also return the rotated mask at that angle.
+#     verbose : int, default=0
+#         If 0, no progress bar is shown. Any other value shows a progress bar.
 
+#     Returns
+#     -------
+#     best_dice : float
+#         Highest Dice score found.
+#     """
 
-def dice_coefficient(mask1: np.ndarray, mask2: np.ndarray) -> float:
-    """
-    Compute the Dice similarity coefficient between two binary masks.
+#     if mask_ref.shape != mask_to_rotate.shape:
+#         raise ValueError("mask_ref and mask_to_rotate must have the same shape")
 
-    Parameters
-    ----------
-    mask1 : np.ndarray
-        First binary mask (values should be 0 or 1).
-    mask2 : np.ndarray
-        Second binary mask (values should be 0 or 1).
+#     # Select rotation plane
+#     if axis == 0:
+#         rot_axes = (1, 2)
+#     elif axis == 1:
+#         rot_axes = (0, 2)
+#     elif axis == 2:
+#         rot_axes = (0, 1)
+#     else:
+#         raise ValueError("axis must be 0, 1, or 2")
 
-    Returns
-    -------
-    float
-        Dice coefficient, ranging from 0 (no overlap) to 1 (perfect overlap).
+#     start, end = angle_range
+#     angles = np.arange(start, end, angle_step)
 
-    Notes
-    -----
-    The Dice coefficient is defined as:
-        Dice = 2 * |A ∩ B| / (|A| + |B|)
-    """
-    mask1 = mask1.astype(bool)
-    mask2 = mask2.astype(bool)
+#     best_dice = -1.0
+#     best_angle = None
+#     best_rotated = None
 
-    intersection = np.logical_and(mask1, mask2).sum()
-    size_sum = mask1.sum() + mask2.sum()
+#     for angle in tqdm(angles, desc='computing invariant dice', disable=verbose==0):
+#         rotated = rotate(
+#             mask_to_rotate,
+#             angle=angle,
+#             axes=rot_axes,
+#             reshape=False,
+#             order=0,         # nearest-neighbor for binary masks
+#             mode='constant',
+#             cval=0.0
+#         )
 
-    if size_sum == 0:
-        return 1.0  # Both masks empty → perfect similarity
-    return 2.0 * intersection / size_sum
+#         d = dice_coefficient(mask_ref, rotated)
 
+#         if d > best_dice:
+#             best_dice = d
+#             best_angle = angle
+#             best_rotated = rotated
 
-def invariant_dice_coefficient(
+#     # --- return logic ---
+#     if not return_angle and not return_mask:
+#         return best_dice
+#     elif return_angle and not return_mask:
+#         return best_dice, best_angle
+#     elif return_angle and return_mask:
+#         return best_dice, best_angle, best_rotated
+#     else:  # return_mask=True but return_angle=False
+#         return best_dice, best_rotated
+    
+
+def rotate_to_ref(
     mask_ref: np.ndarray,
     mask_to_rotate: np.ndarray,
     axis: int = 2, #rotation in Z axis, (X,Y,Z)
     angle_range=(0.0, 360.0),
     angle_step: float = 1.0,
-    return_angle: bool = False,
-    return_mask: bool = False,
     verbose: int = 0,
 ):
     """
@@ -90,31 +120,19 @@ def invariant_dice_coefficient(
         Range of rotation angles.
     angle_step : float, default=1.0
         Step size in degrees.
-    return_angle : bool, default=False
-        If True, also return the best angle.
-    return_mask : bool, default=False
-        If True, also return the rotated mask at that angle.
     verbose : int, default=0
         If 0, no progress bar is shown. Any other value shows a progress bar.
 
     Returns
     -------
-    best_dice : float
-        Highest Dice score found.
+    best_rotate : np.ndarray
+        Rotated mask
+    best_angle : float
+        Rotation angle
     """
 
     if mask_ref.shape != mask_to_rotate.shape:
         raise ValueError("mask_ref and mask_to_rotate must have the same shape")
-
-    # --- inner Dice function ---
-    def dice_coefficient(m1: np.ndarray, m2: np.ndarray) -> float:
-        m1 = m1.astype(bool)
-        m2 = m2.astype(bool)
-        intersection = np.logical_and(m1, m2).sum()
-        size_sum = m1.sum() + m2.sum()
-        if size_sum == 0:
-            return 1.0
-        return 2.0 * intersection / size_sum
 
     # Select rotation plane
     if axis == 0:
@@ -133,7 +151,7 @@ def invariant_dice_coefficient(
     best_angle = None
     best_rotated = None
 
-    for angle in tqdm(angles, desc='computing invariant dice', disable=verbose==0):
+    for angle in tqdm(angles, desc='Finding rotation..', disable=verbose==0):
         rotated = rotate(
             mask_to_rotate,
             angle=angle,
@@ -152,14 +170,7 @@ def invariant_dice_coefficient(
             best_rotated = rotated
 
     # --- return logic ---
-    if not return_angle and not return_mask:
-        return best_dice
-    elif return_angle and not return_mask:
-        return best_dice, best_angle
-    elif return_angle and return_mask:
-        return best_dice, best_angle, best_rotated
-    else:  # return_mask=True but return_angle=False
-        return best_dice, best_rotated
+    return best_rotated, best_angle
 
 
 
@@ -192,139 +203,9 @@ def pca_affine(original_affine, centroid, eigvecs):
 
 
 
-def second_vector_cone_dir(mask, centroid, eigvec1, voxel_size, cone_angle=10):
-    """Orient the eigenvector int he direction of
-    the half-cone (defined by angular aperture around that axis) with the least mass.
-
-    This function works but is not used at the moment as the cone sweep appears 
-    prefereable. Could be reinstated if a decision is made later on to stick to 
-    eigenvectors after all.
-
-    Args:
-        mask (numpy.ndarray): Binary mask (3D volume).
-        centroid (numpy.ndarray): 3-element centroid.
-        eigvec1 (numpy.ndarray): In-plane unit vector 1.
-        voxel_size (numpy.ndarray): 3-element voxel dimensions.
-        cone_angle (float, optional): Cone aperture (degrees). Defaults to 10.
-
-    Returns:
-        numpy.ndarray: Unit vector (3,) in the plane, pointing toward the lighter half.
-    """
-    # normalize eigenvectors
-    eigvec1 = eigvec1 / np.linalg.norm(eigvec1)
-
-    # voxel coordinates in physical units, shifted to centroid
-    coords = np.argwhere(mask > 0).astype(float) * voxel_size
-    coords -= centroid
-
-    if coords.shape[0] == 0:
-        return eigvec1  # empty mask
-
-    cos_cone = np.cos(np.deg2rad(cone_angle / 2))  # use half-angle for selection
-
-    # Sweep candidate directions in plane
-    d = eigvec1
-
-    # normalize coords for angle test
-    norms = np.linalg.norm(coords, axis=1)
-    valid = norms > 0
-    unit_coords = np.zeros_like(coords)
-    unit_coords[valid] = coords[valid] / norms[valid, None]
-
-    # angle test: voxel inside cone if dot(u, d) >= cos(theta)
-    dots = np.abs(unit_coords @ d)
-    cone_voxels = coords[dots >= cos_cone]
-
-    # project onto candidate axis
-    proj = cone_voxels @ d
-
-    left_mass = np.sum(proj < 0)
-    right_mass = np.sum(proj >= 0)
-
-    best_vec = -d if left_mass < right_mass else d
-
-    return best_vec
 
 
 
-def _old_second_vector_cone_sweep(mask, centroid, eigvec1, eigvec2, voxel_size, cone_angle=10, angle_step=1):
-    """Find a direction lying in the plane of eigvec1 & eigvec2 that points to
-    the half-cone (defined by angular aperture around that axis) with the least mass.
-
-    If multiple directions have the same minimum mass, the middle candidate is chosen.
-
-    Args:
-        mask (numpy.ndarray): Binary mask (3D volume).
-        centroid (numpy.ndarray): 3-element centroid.
-        eigvec1 (numpy.ndarray): In-plane unit vector 1.
-        eigvec2 (numpy.ndarray): In-plane unit vector 2.
-        voxel_size (numpy.ndarray): 3-element voxel dimensions.
-        cone_angle (float, optional): Cone aperture (degrees). Defaults to 30.
-        angle_step (float, optional): Step size (degrees) for candidate sweep. Defaults to 1.
-
-    Returns:
-        numpy.ndarray: Unit vector (3,) in the plane, pointing toward the lighter half.
-    """
-    # normalize eigenvectors
-    eigvec1 = eigvec1 / np.linalg.norm(eigvec1)
-    eigvec2 = eigvec2 / np.linalg.norm(eigvec2)
-
-    # voxel coordinates in physical units, shifted to centroid
-    coords = np.argwhere(mask > 0).astype(float) * voxel_size
-    coords -= centroid
-
-    if coords.shape[0] == 0:
-        return eigvec1  # empty mask
-
-    cos_cone = np.cos(np.deg2rad(cone_angle / 2))  # use half-angle for selection
-
-    candidates = []  # store (lighter_mass, angle, direction)
-
-    # Sweep candidate directions in plane
-    for angle in np.arange(0, 180, angle_step):
-        rad = np.deg2rad(angle)
-        d = np.cos(rad) * eigvec1 + np.sin(rad) * eigvec2
-        d /= np.linalg.norm(d)
-
-        # normalize coords for angle test
-        norms = np.linalg.norm(coords, axis=1)
-        valid = norms > 0
-        unit_coords = np.zeros_like(coords)
-        unit_coords[valid] = coords[valid] / norms[valid, None]
-
-        # angle test: voxel inside cone if dot(u, d) >= cos(theta)
-        dots = np.abs(unit_coords @ d)
-        cone_voxels = coords[dots >= cos_cone]
-
-        if cone_voxels.shape[0] == 0:
-            continue  # skip empty cone
-
-        # project onto candidate axis
-        proj = cone_voxels @ d
-
-        left_mass = np.sum(proj < 0)
-        right_mass = np.sum(proj >= 0)
-        lighter_mass = min(left_mass, right_mass)
-
-        # orient toward lighter side
-        d_oriented = -d if left_mass < right_mass else d
-        candidates.append((lighter_mass, angle, d_oriented))
-
-    if not candidates:
-        return eigvec1
-
-    # find minimum lighter_mass
-    min_mass = min(c[0] for c in candidates)
-
-    # filter candidates with min_mass
-    min_candidates = [c for c in candidates if c[0] == min_mass]
-
-    # choose the middle one by angle
-    min_candidates.sort(key=lambda x: x[1])
-    middle_idx = len(min_candidates) // 2
-    best_vec = min_candidates[middle_idx][2]
-
-    return best_vec
 
 
 def second_vector_cone_sweep(mask, centroid, eigvec1, eigvec2, voxel_size, cone_angle=30, angle_step=1):
@@ -402,7 +283,7 @@ def second_vector_cone_sweep(mask, centroid, eigvec1, eigvec2, voxel_size, cone_
     # This handles the "plateau" of equal values
     best_vectors = [c[1] for c in candidates if c[0] == min_mass]
 
-    # 6. Compute the Mean Vector (The Fix)
+    # 6. Compute the Mean Vector
     # Instead of sorting angles, we average the 3D vectors.
     # This correctly interpolates across the 0/180 degree wrap-around.
     mean_vector = np.mean(best_vectors, axis=0)
@@ -439,6 +320,8 @@ def orient_vector_with_cone(mask, centroid, vector, voxel_size, cone_angle=30):
     --------
     np.ndarray
         The oriented unit vector pointing to the lighter side.
+    float
+        The mass the vector is pointing to
     """
     # 1. Normalize the input vector
     vec = vector / np.linalg.norm(vector)
@@ -490,15 +373,17 @@ def orient_vector_with_cone(mask, centroid, vector, voxel_size, cone_angle=30):
     
     mass_forward = np.sum(valid_dots > 0)
     mass_backward = np.sum(valid_dots < 0)
+    skew = np.abs(mass_forward - mass_backward) / (mass_forward + mass_backward)
 
     # 7. Orientation Logic
     # We want to point to the LEAST mass.
     if mass_forward > mass_backward:
         # The direction we are currently pointing to is heavier. Flip it.
-        return -vec
+        return -vec, skew
     
     # Otherwise, current direction is lighter (or equal). Keep it.
-    return vec
+    return vec, skew
+
 
 def kidney_canonical_axes(mask, centroid, eigvecs, voxel_size):
     """
@@ -520,7 +405,14 @@ def kidney_canonical_axes(mask, centroid, eigvecs, voxel_size):
 
     # Decide direction of the secondary axes
     # sagittal_axis = second_vector_cone_sweep(mask, centroid, eigvecs[:,1], eigvecs[:,2], voxel_size)
-    sagittal_axis = orient_vector_with_cone(mask, centroid, eigvecs[:,1], voxel_size, cone_angle=30)
+    axis1, skew1 = orient_vector_with_cone(mask, centroid, eigvecs[:,1], voxel_size, cone_angle=90)
+    axis2, skew2 = orient_vector_with_cone(mask, centroid, eigvecs[:,2], voxel_size, cone_angle=90)
+    if skew1 > skew2:
+        sagittal_axis = axis1
+    else:
+        sagittal_axis = axis2
+
+    # Compute transversal axis
     transversal_axis = np.cross(longitudinal_axis, sagittal_axis)
 
     # Build new eigenvectors
@@ -657,14 +549,12 @@ def _inertia_principal_axes(volume, voxel_size=(1.0,1.0,1.0), eps=1e-12):
     return centroid_phys, eigvecs, eigvals
 
 
-def normalize_kidney_mask(mask, voxel_size, side):
+def normalize_kidney_mask(mask, voxel_size, side, ref=None, verbose=1):
     """
     Normalize a 3D binary mask using mesh-based PCA alignment and scaling.
     Centers the mesh in the middle of the volume grid.
     """
-    # TODO: either in this function or another compute scale invariant 
-    # shape features such as eigenvalues of normalized volumes. Also 
-    # rotation angles versus patient reference frame (obliqueness).
+    # TODO: return rotation angles versus patient reference frame (obliqueness).
 
     if side not in ['left', 'right']:
         raise ValueError(
@@ -711,7 +601,7 @@ def normalize_kidney_mask(mask, voxel_size, side):
     # Convert back to mask 
     mask_norm = volume.values > 0.5
 
-    params = {
+    params = { # Derive biomarkers on angulation vs ref axes
         "centroid": centroid,
         "eigvecs": eigvecs,
         "eigvals": eigvals,
@@ -721,6 +611,11 @@ def normalize_kidney_mask(mask, voxel_size, side):
         "scale": scale,
         "output_affine": target_affine,
     }
+
+    # If a reference is provided, rotate to match
+    if ref is not None:
+        mask_norm, ref_rotation_angle = rotate_to_ref(ref, mask_norm, angle_step=5, verbose=verbose) 
+        params["ref_rotation"] = ref_rotation_angle
 
     return mask_norm, params
 

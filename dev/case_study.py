@@ -3,7 +3,7 @@ import os
 import dbdicom as db
 import numpy as np
 
-from utils import normalize, render, lb, sdf
+from utils import normalize, render, lb, sdf_ft
 
 DIXONS = os.path.join(os.getcwd(), 'build', 'dixon', 'stage_2_data')
 SEGMENTATIONS = os.path.join(os.getcwd(), 'build', 'kidneyvol', 'stage_3_edit')
@@ -44,7 +44,7 @@ def display_surface_sdf():
 
     # Visualize
     size = 20
-    coeffs_trunc, mask_norm_recon = sdf.compress(mask_norm, 3 * [size])
+    coeffs_trunc, mask_norm_recon = sdf_ft.smooth_mask(mask_norm, order=size)
 
     # Visualize
     render.display_volumes(mask_norm, mask_norm_recon)
@@ -95,10 +95,10 @@ def display_normalized():
 
     cutoff = 64
 
-    rk_mask_recon, _ = sdf.compress(rk_mask_norm, 3 * [cutoff])
+    rk_mask_recon, _ = sdf_ft.smooth_mask(rk_mask_norm, order=cutoff)
     render.compare_processed_kidneys(rk_mask_norm, rk_mask_recon, voxel_size_norm)
 
-    lk_mask_recon, _ = sdf.compress(lk_mask_norm, 3 * [cutoff])
+    lk_mask_recon, _ = sdf_ft.smooth_mask(lk_mask_norm, order = cutoff)
     render.compare_processed_kidneys(lk_mask_norm, lk_mask_recon, voxel_size_norm)
 
     print('\nRight kidney volume')
@@ -125,7 +125,7 @@ def display_normalized_npz(npz_dir):
         f"Series__1__{series_desc}.npz",
     )
     mask = np.load(filepath)['mask']
-    mask = sdf.smooth_mask(mask, 3 * [32])
+    mask = sdf_ft.smooth_mask(mask, order=32)
     render.display_volume(mask)
 
 

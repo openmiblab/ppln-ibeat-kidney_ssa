@@ -4,6 +4,7 @@ import os
 import csv
 import re
 import json
+from pathlib import Path
 
 
 STUDY_CODE = {
@@ -22,6 +23,17 @@ SERIES_CODE = {
     "normalized_kidney_right": 'R',
     "normalized_kidney_left": 'L',
 }
+
+
+def sort_kidney_masks(kidney_masks):
+    # Get labels
+    kidney_labels = [label_db_series(k) for k in kidney_masks]
+    # Sort labels and masks by labels
+    sorted_pairs = sorted(zip(kidney_labels, kidney_masks))
+    # Extract sorted masks and labels
+    kidney_labels_sorted = [label for label, _ in sorted_pairs]
+    kidney_masks_sorted  = [mask  for _, mask in sorted_pairs]
+    return kidney_masks_sorted, kidney_labels_sorted
 
 
 def sort_kidney_npz(kidney_masks):
@@ -83,6 +95,7 @@ def parse_npz_dbfile(file) -> dict:
         # TODO return StudyID and SeriesNumber
     }
     return label, value
+
 
 def label_db_series(series):
     patient = series[1]

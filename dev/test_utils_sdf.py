@@ -1,7 +1,7 @@
 import numpy as np
 import napari
 
-from src.utils import normalize, sdf, render
+from src.utils import normalize, sdf_ft, render
 
 
 
@@ -29,7 +29,7 @@ def test_representation():
 
     # Visualize
     size = 100
-    coeffs, coeffs_trunc, mask_norm_recon = sdf.compress(mask_norm, [size, size, size])
+    coeffs, coeffs_trunc, mask_norm_recon = sdf_ft.smooth_mask(mask_norm, order=size)
 
     # Visualize
     # render.display_volume(mask_norm_recon)

@@ -3,31 +3,16 @@ import os
 import dbdicom as db
 import numpy as np
 
-from ibeat_kidney_ssa.utils import normalize, render
-
-
-
-# A: "7128_035_R",
-#     "7128_090_R",
-#     "5128_036_L",
-#     "7128_071_R",
-#     "1128_025_L",
-
-# B: "3128_072_R",
-#     "2128_008_L",
-#     "4128_035_L",
-#     "5128_012_L",
-#     "3128_107_R",
-
-# A  = [0,2]
-# B  = [1,3]
+from ibeat_kidney_ssa.utils import gui, normalize
 
 
 
 def display_normalized(build):
 
-    _display_normalized(build, "7128_035", 'R')
-    _display_normalized(build, "3128_072", 'R')
+    pid = "5128_016"
+
+    _display_normalized(build, pid, 'R')
+    _display_normalized(build, pid, 'L')
 
 
 
@@ -47,12 +32,12 @@ def _display_normalized(build, patient_id, kidney):
     if kidney == 'R':
         rk_mask = vol.values == 2
         rk_mask_norm, _ = normalize.normalize_kidney_mask(rk_mask, voxel_size, 'right')
-        return render.display_kidney_normalization(rk_mask, rk_mask_norm, voxel_size, voxel_size_norm, title='Right kidney')
+        return gui.display_kidney_normalization(rk_mask, rk_mask_norm, voxel_size, voxel_size_norm, title='Right kidney')
 
     if kidney == 'L':
         lk_mask = vol.values == 1
         lk_mask_norm, _ = normalize.normalize_kidney_mask(lk_mask, voxel_size, 'left')
-        return render.display_kidney_normalization(np.flip(lk_mask, 0), lk_mask_norm, voxel_size, voxel_size_norm, title='Left kidney flipped')
+        return gui.display_kidney_normalization(np.flip(lk_mask, 0), lk_mask_norm, voxel_size, voxel_size_norm, title='Left kidney flipped')
     
 
 def display_two_kidneys(build):
@@ -84,7 +69,7 @@ def display_two_kidneys(build):
     voxel_size_2 = vol.spacing
     title2=f"{pt}_{kd}"
 
-    render.display_two_kidneys(kidney1, kidney2,
+    gui.display_two_kidneys(kidney1, kidney2,
                         kidney1_voxel_size=voxel_size_1,
                         kidney2_voxel_size=voxel_size_2,
                         title1=title1, title2=title2)
@@ -121,7 +106,7 @@ def display_two_normalized_kidneys(build):
     side = 'right' if kd == 'R' else 'left'
     kidney2_norm, _ = normalize.normalize_kidney_mask(kidney2, voxel_size_2, side)
 
-    render.display_two_normalized_kidneys(kidney1_norm, kidney2_norm,
+    gui.display_two_normalized_kidneys(kidney1_norm, kidney2_norm,
                         title='Two normalized kidneys')
 
 
@@ -129,6 +114,6 @@ if __name__ == '__main__':
 
     BUILD = r"C:\Users\md1spsx\Documents\Data\iBEAt_Build"
 
-    # display_normalized(BUILD)
-    display_two_kidneys(BUILD)
-    display_two_normalized_kidneys(BUILD)
+    display_normalized(BUILD)
+    # display_two_kidneys(BUILD)
+    # display_two_normalized_kidneys(BUILD)
