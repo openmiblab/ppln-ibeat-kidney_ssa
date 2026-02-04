@@ -2,18 +2,15 @@ import os
 import logging
 import argparse
 
-from ibeat_kidney_ssa.utils import pvplot, movie
+from miblab_plot import pvplot, mp4
+from ibeat_kidney_ssa.utils import pipe
 
+PIPELINE = 'kidney_ssa'
 
 def run(build):
-    dir_input = os.path.join(build, 'kidney_ssa', 'stage_3_average_controls')
-    dir_output = os.path.join(build, 'kidney_ssa', 'stage_4_display_average_controls')
+    dir_input = os.path.join(build, PIPELINE, 'stage_3_average_controls')
+    dir_output = pipe.setup_stage(build, PIPELINE, __file__)
 
-    logging.basicConfig(
-        filename=f"{dir_output}.log",
-        level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s'
-    )
     dir_png = os.path.join(dir_output, 'images')
     os.makedirs(dir_png, exist_ok=True)
 
@@ -23,7 +20,7 @@ def run(build):
     
     # Plot
     pvplot.rotating_mosaics_npz(dir_png, [mean_series], [mean_label], nviews=36)
-    movie.images_to_video(dir_png, os.path.join(dir_output, 'animation.mp4'), fps=16)
+    mp4.images_to_video(dir_png, os.path.join(dir_output, 'animation.mp4'), fps=16)
     logging.info(f"Successfully built stage 4 rotating mosaics.")
 
 

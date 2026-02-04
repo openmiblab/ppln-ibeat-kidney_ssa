@@ -5,7 +5,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import zarr
 
-from ibeat_kidney_ssa.utils import pipe, sdf_ft, pvplot, movie, ssa
+import miblab_ssa as ssa
+from miblab_plot import pvplot, mp4
+
+from ibeat_kidney_ssa.utils import pipe
 
 PIPELINE = 'kidney_ssa'
 
@@ -22,7 +25,7 @@ def run(build):
     # Build feature matrix
     feature_path = os.path.join(dir_output, 'spectral_features.zarr')
     ssa.features_from_dataset_zarr(
-        sdf_ft.features_from_mask, 
+        ssa.sdf_ft.features_from_mask, 
         masks_path, 
         feature_path, 
         order=16,
@@ -41,7 +44,7 @@ def run(build):
     # Generate synthetic kidneys along the principal components
     modes_path = os.path.join(dir_output, f"spectral_modes.zarr")
     ssa.modes_from_pca_zarr(
-        sdf_ft.mask_from_features, 
+        ssa.sdf_ft.mask_from_features, 
         pca_path, 
         modes_path, 
         n_components=8, 
@@ -63,7 +66,7 @@ def display_modes(modes_path, dir_png, movie_file):
     coeffs = np.array(modes.attrs['coeffs'][:])
     labels = np.array([[f"C{y}: {round(x, 1)} x sd" for y in range(n_comp)] for x in coeffs])
     pvplot.rotating_masks_grid(dir_png, masks, labels, nviews=25)
-    movie.images_to_video(dir_png, movie_file, fps=16)
+    mp4.images_to_video(dir_png, movie_file, fps=16)
 
 
 def plot_explained_variance(plot_file, var):

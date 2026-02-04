@@ -3,7 +3,8 @@ import os
 import dbdicom as db
 import numpy as np
 
-from ibeat_kidney_ssa.utils import gui, normalize
+import miblab_ssa as ssa
+from miblab_plot import gui
 
 
 
@@ -31,12 +32,12 @@ def _display_normalized(build, patient_id, kidney):
 
     if kidney == 'R':
         rk_mask = vol.values == 2
-        rk_mask_norm, _ = normalize.normalize_kidney_mask(rk_mask, voxel_size, 'right')
+        rk_mask_norm, _ = ssa.normalize_kidney_mask(rk_mask, voxel_size, 'right')
         return gui.display_kidney_normalization(rk_mask, rk_mask_norm, voxel_size, voxel_size_norm, title='Right kidney')
 
     if kidney == 'L':
         lk_mask = vol.values == 1
-        lk_mask_norm, _ = normalize.normalize_kidney_mask(lk_mask, voxel_size, 'left')
+        lk_mask_norm, _ = ssa.normalize_kidney_mask(lk_mask, voxel_size, 'left')
         return gui.display_kidney_normalization(np.flip(lk_mask, 0), lk_mask_norm, voxel_size, voxel_size_norm, title='Left kidney flipped')
     
 
@@ -92,7 +93,7 @@ def display_two_normalized_kidneys(build):
     kidney1 = vol.values == label
     voxel_size_1 = vol.spacing
     side = 'right' if kd == 'R' else 'left'
-    kidney1_norm, _ = normalize.normalize_kidney_mask(kidney1, voxel_size_1, side)
+    kidney1_norm, _ = ssa.normalize_kidney_mask(kidney1, voxel_size_1, side)
     
     # pt, kd =  "3128_072", 'R'
     # pt, kd =  "2128_008", 'L'
@@ -104,7 +105,7 @@ def display_two_normalized_kidneys(build):
     kidney2 = vol.values == label
     voxel_size_2 = vol.spacing
     side = 'right' if kd == 'R' else 'left'
-    kidney2_norm, _ = normalize.normalize_kidney_mask(kidney2, voxel_size_2, side)
+    kidney2_norm, _ = ssa.normalize_kidney_mask(kidney2, voxel_size_2, side)
 
     gui.display_two_normalized_kidneys(kidney1_norm, kidney2_norm,
                         title='Two normalized kidneys')

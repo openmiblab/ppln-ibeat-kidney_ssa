@@ -1,21 +1,20 @@
 import numpy as np
-import numpy as np
-import trimesh
-from scipy.spatial.transform import Rotation as R
+import miblab_ssa as ssa
 
-from src.utils import lb, render
+from miblab_plot import gui
+
 
 
 def test_reconstruct_volume_3d():
 
-    ell_1 = render.ellipsoid_mask(
+    ell_1 = gui.ellipsoid_mask(
         (64, 64, 64), 
         voxel_sizes=(2.0,1.0,1.0), 
         center=(10,0,0),
         radii=(30,10,10),
         rot_vec=(1,0,0),
     )
-    ell_2 = render.ellipsoid_mask(
+    ell_2 = gui.ellipsoid_mask(
         (64, 64, 64), 
         voxel_sizes=(2.0,1.0,1.0), 
         center=(10,0,0),
@@ -24,25 +23,25 @@ def test_reconstruct_volume_3d():
     )
     # mask = np.logical_or(ell_1, ell_2)
     mask = np.logical_and(ell_1, np.logical_not(ell_2))
-    # render.display_volume(original_mask)
+    # gui.display_volume(original_mask)
 
-    mesh = lb.mask_to_mesh(mask) 
-    coeffs, rec_mesh = lb.process(mesh, k=10)
+    mesh = ssa.lb.mask_to_mesh(mask) 
+    coeffs, rec_mesh = ssa.lb.process(mesh, k=10)
 
     # Visualize
-    render.visualize_surface_reconstruction(mesh, rec_mesh)
+    gui.visualize_surface_reconstruction(mesh, rec_mesh)
 
 
 
 def test_invariance():
-    ell_1 = render.ellipsoid_mask(
+    ell_1 = gui.ellipsoid_mask(
         (128, 128, 128), 
         voxel_sizes=(1.0,1.0,1.0), 
         center=(20,0,0),
         radii=(60,20,20),
         rot_vec=(1,0,0),
     )
-    ell_2 = render.ellipsoid_mask(
+    ell_2 = gui.ellipsoid_mask(
         (128, 128, 128), 
         voxel_sizes=(1.0,1.0,1.0), 
         center=(20,0,0),
@@ -50,20 +49,20 @@ def test_invariance():
         rot_vec=(0,1,1),
     )
     mask = np.logical_and(ell_1, np.logical_not(ell_2))
-    mesh = lb.mask_to_mesh(mask) 
-    coeffs_ref, _ = lb.process(mesh, k=5)
+    mesh = ssa.lb.mask_to_mesh(mask) 
+    coeffs_ref, _ = ssa.lb.process(mesh, k=5)
 
     print('ref')
     print(coeffs_ref)
 
-    # ell_1 = render.ellipsoid_mask(
+    # ell_1 = gui.ellipsoid_mask(
     #     (128, 128, 128), 
     #     voxel_sizes=(1.0,1.0,1.0), 
     #     center=(20,0,0),
     #     radii=(60,20,20),
     #     rot_vec=(1,0,0),
     # )
-    # ell_2 = render.ellipsoid_mask(
+    # ell_2 = gui.ellipsoid_mask(
     #     (128, 128, 128), 
     #     voxel_sizes=(1.0,1.0,1.0), 
     #     center=(20,0,0),
@@ -71,8 +70,8 @@ def test_invariance():
     #     rot_vec=(0,1,1),
     # )
     # mask = np.logical_and(ell_1, np.logical_not(ell_2))
-    mesh = lb.mask_to_mesh(mask) 
-    coeffs, _ = lb.process(mesh, k=5)
+    mesh = ssa.lb.mask_to_mesh(mask) 
+    coeffs, _ = ssa.lb.process(mesh, k=5)
 
     print('translate')
     print(coeffs)

@@ -6,22 +6,18 @@ build-backend = "setuptools.build_meta"
 name = "ibeat-kidney-ssa"
 version = "0.0.0"
 dependencies = [
-  'tqdm',
-  'numpy',
-  'dask',
-  'scipy',
-  'vreg',
-  'pyvista', 
-  'scikit-learn',
-  'numpyradiomics',
-  'dbdicom',
-  'pydmr',
-  'scikit-image',
-  'trimesh',
-  'moviepy',
-  'dask-ml',
+  'matplotlib',
   'zarr',
-  'psutil',
+  'numpy',
+  'pandas',
+  'dask',
+  'tqdm', 
+  'numpyradiomics',
+  'pydmr',
+  'dbdicom',
+  'vreg',
+  'miblab-ssa',
+  'miblab-plot',
 ]
 
 [tool.setuptools.packages.find]

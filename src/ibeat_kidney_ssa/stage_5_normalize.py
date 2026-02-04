@@ -2,28 +2,21 @@ import os
 import logging
 import argparse
 
-from tqdm import tqdm
 import dbdicom as db
 from dbdicom import npz
 import vreg
 import dask
+import miblab_ssa as ssa
 
-from ibeat_kidney_ssa.utils import normalize
+from ibeat_kidney_ssa.utils import pipe
 
-
+PIPELINE = 'kidney_ssa'
 
 def run(build):
 
-    dir_input = os.path.join(build, 'kidney_shape', 'stage_3_edit')
-    dir_input_ref = os.path.join(build, 'kidney_ssa', 'stage_3_average_controls')
-    dir_output = os.path.join(build, 'kidney_ssa', 'stage_5_normalize')
-    os.makedirs(dir_output, exist_ok=True)
-
-    logging.basicConfig(
-        filename=f"{dir_output}.log",
-        level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s'
-    )
+    dir_input = os.path.join(build, PIPELINE, 'stage_3_edit')
+    dir_input_ref = os.path.join(build, PIPELINE, 'stage_3_average_controls')
+    dir_output = pipe.setup_stage(build, PIPELINE, __file__)
     for database in ['Controls', 'Patients']:
         db_masks = os.path.join(dir_input, database) 
         run_db(db_masks, dir_input_ref, dir_output)
@@ -74,14 +67,14 @@ def normalize_kidneys(kidney_label, db_input_ref, db_normalize):
         # Compute right kidney
         if not rk_exists:
             rk_mask = vol.values == 2
-            rk_mask_norm, _ = normalize.normalize_kidney_mask(rk_mask, vol.spacing, 'right', ref=ref_mask, verbose=0)
+            rk_mask_norm, _ = ssa.normalize_kidney_mask(rk_mask, vol.spacing, 'right', ref=ref_mask, verbose=0)
             rk_vol_norm = vreg.volume(rk_mask_norm.astype(int))
             npz.write_volume(rk_vol_norm, rk_series)
 
         # Compute left kidney
         if not lk_exists:
             lk_mask = vol.values == 1
-            lk_mask_norm, _ = normalize.normalize_kidney_mask(lk_mask, vol.spacing, 'left', ref=ref_mask, verbose=0)
+            lk_mask_norm, _ = ssa.normalize_kidney_mask(lk_mask, vol.spacing, 'left', ref=ref_mask, verbose=0)
             lk_vol_norm = vreg.volume(lk_mask_norm.astype(int))
             npz.write_volume(lk_vol_norm, lk_series)
 

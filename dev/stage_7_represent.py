@@ -1,8 +1,8 @@
 import os
 import time
 import dbdicom as db
-
-from ibeat_kidney_ssa.utils import gui, sdf_ft, sdf_ft_simple, metrics, sdf_cheby, pdm
+import miblab_ssa as ssa
+from miblab_plot import gui
 
 
 
@@ -39,13 +39,13 @@ def display_two_kidneys(build):
     t0 = time.perf_counter()
     # mask_rec = sdf_cheby.smooth_mask(mask, order=27) # 27: n=4060, dice 0.973, 14s
     # mask_rec = sdf_ft_simple.smooth_mask(mask, order=16) # 16: n=4098, dice 0.972, 5.5s
-    mask_rec = sdf_ft.smooth_mask(mask, order=19) #19: n=4019, dice 0.972, 5.1s
+    mask_rec = ssa.sdf_ft.smooth_mask(mask, order=19) #19: n=4019, dice 0.972, 5.1s
     # mask_rec = pdm.smooth_mask(mask)
 
     t1 = time.perf_counter()
     print(f"Computation time: {t1 - t0:.6f} s")
 
-    dice = metrics.dice_coefficient(mask, mask_rec)
+    dice = ssa.dice_coefficient(mask, mask_rec)
     print(f"Dice coefficient: {dice}")
 
     gui.display_two_kidneys(

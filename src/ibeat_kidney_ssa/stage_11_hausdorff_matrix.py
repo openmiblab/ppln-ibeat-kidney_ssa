@@ -4,8 +4,9 @@ import argparse
 
 import pandas as pd
 import dask.array as da
+import miblab_ssa as ssa
 
-from ibeat_kidney_ssa.utils import metrics, pipe
+from ibeat_kidney_ssa.utils import pipe
 
 PIPELINE = 'kidney_ssa'
 
@@ -20,7 +21,7 @@ def run(build):
     zarr_path = os.path.join(dir_input, 'normalized_kidney_masks.zarr')
 
     # 3. Compute Hausdorff matrix
-    matrix = metrics.hausdorff_matrix_zarr(zarr_path)
+    matrix = ssa.hausdorff_matrix_zarr(zarr_path)
     logging.info(f"Stage 11: Finished computing Hausdorff matrix")
 
     # 4. Save as csv with column and row labels

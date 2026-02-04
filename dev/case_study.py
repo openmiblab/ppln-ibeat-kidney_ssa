@@ -3,7 +3,8 @@ import os
 import dbdicom as db
 import numpy as np
 
-from utils import normalize, render, lb, sdf_ft
+import miblab_ssa as ssa
+from miblab_plot import gui
 
 DIXONS = os.path.join(os.getcwd(), 'build', 'dixon', 'stage_2_data')
 SEGMENTATIONS = os.path.join(os.getcwd(), 'build', 'kidneyvol', 'stage_3_edit')
@@ -26,11 +27,11 @@ def display_surface_lb():
     series = [SEGMENTATIONS, patient, study, task]
     vol = db.volume(series)
     mask = vol.values == 2
-    mesh = lb.mask_to_mesh(mask) 
-    coeffs, eigvals, recon_mesh = lb.process(mesh, k=100, threshold=15)
+    mesh = ssa.lb.mask_to_mesh(mask) 
+    coeffs, eigvals, recon_mesh = ssa.lb.process(mesh, k=100, threshold=15)
     for i, c in enumerate(coeffs):
         print(i, eigvals[i], float(np.linalg.norm(c)))
-    render.visualize_surface_reconstruction(mesh, recon_mesh, opacity=(0.3,0.3))
+    gui.visualize_surface_reconstruction(mesh, recon_mesh, opacity=(0.3,0.3))
 
 
 def display_surface_sdf():
@@ -39,15 +40,15 @@ def display_surface_sdf():
     
     # Normalize and display
     mask = vol.values == 2
-    mask_norm, params = normalize.normalize_mask(mask)
-    render.display_volumes(mask, mask_norm)
+    mask_norm, params = ssa.normalize_mask(mask)
+    gui.display_volumes(mask, mask_norm)
 
     # Visualize
     size = 20
-    coeffs_trunc, mask_norm_recon = sdf_ft.smooth_mask(mask_norm, order=size)
+    coeffs_trunc, mask_norm_recon = ssa.sdf_ft.smooth_mask(mask_norm, order=size)
 
     # Visualize
-    render.display_volumes(mask_norm, mask_norm_recon)
+    gui.display_volumes(mask_norm, mask_norm_recon)
 
 
 def display_multiple_normalized():
@@ -63,12 +64,12 @@ def display_multiple_normalized():
         voxel_size_norm = 3 * [spacing_norm]
 
         rk_mask = vol.values == 2
-        rk_mask_norm, _ = normalize.normalize_kidney_mask(rk_mask, voxel_size, 'right')
-        render.display_kidney_normalization(rk_mask, rk_mask_norm, voxel_size, voxel_size_norm, title='Right kidney')
+        rk_mask_norm, _ = ssa.normalize_kidney_mask(rk_mask, voxel_size, 'right')
+        gui.display_kidney_normalization(rk_mask, rk_mask_norm, voxel_size, voxel_size_norm, title='Right kidney')
 
         lk_mask = vol.values == 1
-        lk_mask_norm, _ = normalize.normalize_kidney_mask(lk_mask, voxel_size, 'left')
-        render.display_kidney_normalization(np.flip(lk_mask, 0), lk_mask_norm, voxel_size, voxel_size_norm, title='Left kidney flipped')
+        lk_mask_norm, _ = ssa.normalize_kidney_mask(lk_mask, voxel_size, 'left')
+        gui.display_kidney_normalization(np.flip(lk_mask, 0), lk_mask_norm, voxel_size, voxel_size_norm, title='Left kidney flipped')
 
 
 
@@ -81,12 +82,12 @@ def display_normalized():
     voxel_size_norm = 3 * [spacing_norm]
 
     rk_mask = vol.values == 2
-    rk_mask_norm, _ = normalize.normalize_kidney_mask(rk_mask, voxel_size, 'right')
-    render.display_kidney_normalization(rk_mask, rk_mask_norm, title='Right kidney')
+    rk_mask_norm, _ = ssa.normalize_kidney_mask(rk_mask, voxel_size, 'right')
+    gui.display_kidney_normalization(rk_mask, rk_mask_norm, title='Right kidney')
 
     lk_mask = vol.values == 1
-    lk_mask_norm, _ = normalize.normalize_kidney_mask(lk_mask, voxel_size, 'left')
-    render.display_kidney_normalization(np.flip(lk_mask, 0), lk_mask_norm, voxel_size, voxel_size_norm, title='Left kidney flipped')
+    lk_mask_norm, _ = ssa.normalize_kidney_mask(lk_mask, voxel_size, 'left')
+    gui.display_kidney_normalization(np.flip(lk_mask, 0), lk_mask_norm, voxel_size, voxel_size_norm, title='Left kidney flipped')
 
     return
     # render.display_normalized_kidneys(rk_mask_norm, lk_mask_norm, voxel_size_norm)
@@ -95,11 +96,11 @@ def display_normalized():
 
     cutoff = 64
 
-    rk_mask_recon, _ = sdf_ft.smooth_mask(rk_mask_norm, order=cutoff)
-    render.compare_processed_kidneys(rk_mask_norm, rk_mask_recon, voxel_size_norm)
+    rk_mask_recon, _ = ssa.sdf_ft.smooth_mask(rk_mask_norm, order=cutoff)
+    gui.compare_processed_kidneys(rk_mask_norm, rk_mask_recon, voxel_size_norm)
 
-    lk_mask_recon, _ = sdf_ft.smooth_mask(lk_mask_norm, order = cutoff)
-    render.compare_processed_kidneys(lk_mask_norm, lk_mask_recon, voxel_size_norm)
+    lk_mask_recon, _ = ssa.sdf_ft.smooth_mask(lk_mask_norm, order = cutoff)
+    gui.compare_processed_kidneys(lk_mask_norm, lk_mask_recon, voxel_size_norm)
 
     print('\nRight kidney volume')
     print(f"Target: {volume_norm / 1e6} Litre")
@@ -125,8 +126,8 @@ def display_normalized_npz(npz_dir):
         f"Series__1__{series_desc}.npz",
     )
     mask = np.load(filepath)['mask']
-    mask = sdf_ft.smooth_mask(mask, order=32)
-    render.display_volume(mask)
+    mask = ssa.sdf_ft.smooth_mask(mask, order=32)
+    gui.display_volume(mask)
 
 
 if __name__=='__main__':

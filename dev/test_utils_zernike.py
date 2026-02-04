@@ -1,11 +1,12 @@
 import numpy as np
+import miblab_ssa as ssa
+from miblab_plot import gui
 
-from src.utils import zernike, render
 
 
 def test_zernike_moments_3d():
     # Create a simple 3D mask (e.g., a sphere)
-    mask = render.ellipsoid_mask(
+    mask = gui.ellipsoid_mask(
         (64, 64, 32), 
         voxel_sizes=(1.0,1.0,1.0), 
         center=(0,0,0),
@@ -14,7 +15,7 @@ def test_zernike_moments_3d():
     )
 
     # Compute moments up to order n_max = 4
-    moments, _ = zernike.zernike_moments_3d(mask, n_max=4)
+    moments, _ = ssa.zernike.zernike_moments_3d(mask, n_max=4)
     
     print("Computed 3D Zernike Moments (n, m, l):")
     for key, value in moments.items():
@@ -24,14 +25,14 @@ def test_zernike_moments_3d():
 
 def test_reconstruct_volume_3d():
 
-    ell_1 = render.ellipsoid_mask(
+    ell_1 = gui.ellipsoid_mask(
         (64, 64, 64), 
         voxel_sizes=(1.0,1.0,1.0), 
         center=(0,0,0),
         radii=(30,10,10),
         rot_vec=(1,0,0),
     )
-    ell_2 = render.ellipsoid_mask(
+    ell_2 = gui.ellipsoid_mask(
         (64, 64, 64), 
         voxel_sizes=(1.0,1.0,1.0), 
         center=(0,0,0),
@@ -39,17 +40,17 @@ def test_reconstruct_volume_3d():
         rot_vec=(0,1,1),
     )
     original_mask = np.logical_or(ell_1, ell_2)
-    # render.display_volume(original_mask)
+    # gui.display_volume(original_mask)
 
     # Compute moments up to order n_max = 4
-    moments, (max_dist_val, centroid_val) = zernike.zernike_moments_3d(original_mask, n_max=20)
+    moments, (max_dist_val, centroid_val) = ssa.zernike.zernike_moments_3d(original_mask, n_max=20)
     
     # Reconstruct the volume
-    recon = zernike.reconstruct_volume_3d(
+    recon = ssa.zernike.reconstruct_volume_3d(
         moments, original_mask.shape, max_dist_val, centroid_val)
     
     recon_mask = recon > np.percentile(recon, 15)
-    render.display_volumes(original_mask, recon_mask)
+    gui.display_volumes(original_mask, recon_mask)
 
 
 # Example usage

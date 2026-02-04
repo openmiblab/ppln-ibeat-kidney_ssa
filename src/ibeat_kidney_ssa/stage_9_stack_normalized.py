@@ -4,9 +4,7 @@ import argparse
 
 from tqdm import tqdm
 from dbdicom import npz
-import numpy as np
 import zarr
-
 
 from ibeat_kidney_ssa.utils import data, pipe
 
@@ -62,17 +60,6 @@ def run(build):
         # vol_data is now freed from RAM for the next iteration
 
     logging.info(f"Stage 9: Saved mask matrix")
-
-    # # 2. Create matrix in memory
-    # n_kidneys = len(kidney_masks_sorted)
-    # shape = npz.volume(kidney_masks_sorted[0]).shape
-    # matrix = np.empty((n_kidneys, ) + shape, dtype=bool)
-    # for i, mask in tqdm(enumerate(kidney_masks_sorted), desc="Stage 9: Loading masks"):
-    #     matrix[i, ...] = npz.volume(mask).values.astype(bool) 
-
-    # # Save the matrix and labels
-    # matrix_path = os.path.join(dir_output, 'normalized_kidney_masks.npz')
-    # np.savez(matrix_path, masks=matrix, labels=kidney_labels_sorted)
 
 
 

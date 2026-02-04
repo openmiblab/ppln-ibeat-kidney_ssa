@@ -1,22 +1,18 @@
 import os
 import logging
-import json
 import argparse
 
 from dbdicom import npz
+from miblab_plot import pvplot, mp4
 
-from ibeat_kidney_ssa.utils import pvplot, data, movie
+from ibeat_kidney_ssa.utils import data, pipe
 
+PIPELINE = 'kidney_ssa'
 
 def run(build):
-    dir_input = os.path.join(build, 'kidney_ssa', 'stage_5_normalize')
-    dir_output = os.path.join(build, 'kidney_ssa', 'stage_6_display_normalized')
+    dir_input = os.path.join(build, PIPELINE, 'stage_5_normalize')
+    dir_output = pipe.setup_stage(build, PIPELINE, __file__)
 
-    logging.basicConfig(
-        filename=f"{dir_output}.log",
-        level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s'
-    )
     dir_png = os.path.join(dir_output, 'images')
     os.makedirs(dir_png, exist_ok=True)
 
@@ -27,7 +23,7 @@ def run(build):
     try:
         ncols, nrows = 16, 8
         pvplot.rotating_mosaics_npz(dir_png, kidney_masks_sorted, kidney_labels_sorted, chunksize=ncols * nrows, nviews=25, columns=ncols, rows=nrows)
-        movie.images_to_video(dir_png, os.path.join(dir_output, 'normalized_kidneys.mp4'), fps=16)
+        mp4.images_to_video(dir_png, os.path.join(dir_output, 'normalized_kidneys.mp4'), fps=16)
         logging.info(f"Stage 6: Successfully built rotating mosaics.")
     except:
         logging.exception(f"Stage 6: Error building rotating mosaics.")

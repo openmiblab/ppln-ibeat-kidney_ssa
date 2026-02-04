@@ -6,21 +6,16 @@ from pathlib import Path
 import numpy as np
 from dbdicom import npz
 import vreg
+import miblab_ssa as ssa
 
-from ibeat_kidney_ssa.utils import sdf_ft, data
+from ibeat_kidney_ssa.utils import data, pipe
 
+PIPELINE = 'kidney_ssa'
 
 def run(build):
 
-    dir_input = os.path.join(build, 'kidney_ssa', 'stage_1_normalize_controls')
-    dir_output = os.path.join(build, 'kidney_ssa', 'stage_3_average_controls')
-    os.makedirs(dir_output, exist_ok=True)
-
-    logging.basicConfig(
-        filename=f"{dir_output}.log",
-        level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s'
-    )
+    dir_input = os.path.join(build, PIPELINE, 'stage_1_normalize_controls')
+    dir_output = pipe.setup_stage(build, PIPELINE, __file__)
 
     logging.info("Computation of feature vectors started")
 
@@ -31,7 +26,7 @@ def run(build):
     kidney_files_sorted = [npz.file(m) for m in kidney_masks_sorted]
 
     # Compute feature vectors
-    feature_file = ssa.compute_features(
+    feature_file = ssa.sdf_ft.compute_features(
         dir_output, 
         kidney_files_sorted, 
         kidney_labels_sorted,
@@ -44,7 +39,7 @@ def run(build):
 
         # Compute mask and save
         mean_series = [dir_output, 'MIBL_C01', ('Visit1', 0), ('normalized_kidney_avr', 0)]
-        mean_mask = sdf_ft.mask_from_features(Xmean, feature_data['shape'], feature_data['order'])
+        mean_mask = ssa.sdf_ft.mask_from_features(Xmean, feature_data['shape'], feature_data['order'])
         mean_vol = vreg.volume(mean_mask.astype(int))
         npz.write_volume(mean_vol, mean_series)
 

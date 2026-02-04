@@ -1,28 +1,23 @@
 import os
 import logging
 import argparse
-from pathlib import Path
 
-from tqdm import tqdm
 import numpy as np
 import pydmr
 import numpyradiomics as npr
 from dbdicom import npz
 import dask
 
+from ibeat_kidney_ssa.utils import pipe
+
+PIPELINE = 'kidney_ssa'
 
 
 def run(build):
 
     # Define folders
-    dir_input = os.path.join(build, 'kidney_ssa', 'stage_5_normalize') 
-    dir_output = os.path.join(build, 'kidney_ssa', 'stage_7_extract_features')
-    logging.basicConfig(
-        filename=f"{dir_output}.log",
-        level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s'
-    )
-    os.makedirs(dir_output, exist_ok=True)
+    dir_input = os.path.join(build, PIPELINE, 'stage_5_normalize') 
+    dir_output = pipe.setup_stage(build, PIPELINE, __file__)
 
     # Get kidney mask files at baseline
     kidney_masks = npz.series(dir_input)
