@@ -13,16 +13,15 @@ from ibeat_kidney_ssa.utils import pipe
 PIPELINE = 'kidney_ssa'
 
 def run(build):
-    # Set the stage
-    dir_input = os.path.join(build, PIPELINE, 'stage_9_stack_normalized')
-    dir_output = pipe.setup_stage(build, PIPELINE, __file__)
 
     logging.info("Stage 12 --- Spectral PCA ---")
+    dir_input = os.path.join(build, PIPELINE, 'stage_9_stack_normalized')
+    dir_output = pipe.setup_stage(build, PIPELINE, __file__)
 
     # Input data - stack of normalized masks
     masks_path = os.path.join(dir_input, 'normalized_kidney_masks.zarr')
 
-    # Build feature matrix
+    logging.info("Stage 12. Building feature matrix")
     feature_path = os.path.join(dir_output, 'spectral_features.zarr')
     ssa.features_from_dataset_zarr(
         ssa.sdf_ft.features_from_mask, 
@@ -31,17 +30,17 @@ def run(build):
         order=16,
     )
 
-    # Build principal components and plot variance explained
+    logging.info("Stage 12. Computing PCA")
     pca_path = os.path.join(dir_output, f"spectral_components.zarr")
     var = ssa.pca_from_features_zarr(feature_path, pca_path)
     plot_file = os.path.join(dir_output, f"spectral_explained_variance.png")
     plot_explained_variance(plot_file, var)
 
-    # Project kidneys along principal components (note include in step 1)
+    logging.info("Stage 12. Compute spectral coefficients")
     coeffs_path = os.path.join(dir_output, f"spectral_coefficients.zarr")
     ssa.coefficients_from_features_zarr(feature_path, pca_path, coeffs_path)
 
-    # Generate synthetic kidneys along the principal components
+    logging.info("Stage 12. Generate synthetic kidneys along PC")
     modes_path = os.path.join(dir_output, f"spectral_modes.zarr")
     ssa.modes_from_pca_zarr(
         ssa.sdf_ft.mask_from_features, 
@@ -51,7 +50,7 @@ def run(build):
         max_coeff=10,
     )
 
-    # Display principal modes
+    logging.info("Stage 12. Display principal modes")
     dir_png = os.path.join(dir_output, 'images')
     movie_file = os.path.join(dir_output, 'spectral_modes.mp4')
     display_modes(modes_path, dir_png, movie_file)

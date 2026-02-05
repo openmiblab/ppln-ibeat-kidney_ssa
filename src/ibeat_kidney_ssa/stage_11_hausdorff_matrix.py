@@ -11,11 +11,10 @@ from ibeat_kidney_ssa.utils import pipe
 PIPELINE = 'kidney_ssa'
 
 def run(build):
-    # Inputs to the stage
-    dir_input = os.path.join(build, PIPELINE, 'stage_9_stack_normalized')
-    dir_output = pipe.setup_stage(build, PIPELINE, __file__)
 
     logging.info("Stage 11 --- Computing Hausdorff matrix ---")
+    dir_input = os.path.join(build, PIPELINE, 'stage_9_stack_normalized')
+    dir_output = pipe.setup_stage(build, PIPELINE, __file__)
 
     # Define the input path
     zarr_path = os.path.join(dir_input, 'normalized_kidney_masks.zarr')

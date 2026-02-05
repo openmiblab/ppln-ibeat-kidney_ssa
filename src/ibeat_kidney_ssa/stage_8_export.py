@@ -11,6 +11,8 @@ from ibeat_kidney_ssa.utils import pipe
 PIPELINE = 'kidney_ssa'
 
 def run(build):
+
+    logging.info("Stage 8 --- Exporting shape features ---")
     dir_measure = os.path.join(build, PIPELINE, 'stage_7_extract_features')
     dir_output = pipe.setup_stage(build, PIPELINE, __file__)
     
@@ -64,7 +66,7 @@ def run(build):
     df.rename(columns=new_cols, inplace=True)
     df.to_csv(wide_format_file, index=False)
 
-    logging.info(f"Successfully exported shape features")
+    logging.info(f"Stage 8. Successfully exported shape features")
 
 
 

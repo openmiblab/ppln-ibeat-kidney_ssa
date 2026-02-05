@@ -15,15 +15,12 @@ PIPELINE = 'kidney_ssa'
 
 def run(build):
 
-    # Define folders
+    logging.info("Stage 7 --- Extracting shape features ---")
     dir_input = os.path.join(build, PIPELINE, 'stage_5_normalize') 
     dir_output = pipe.setup_stage(build, PIPELINE, __file__)
 
     # Get kidney mask files at baseline
     kidney_masks = npz.series(dir_input)
-
-    # Compute sequentially
-    # dmr_files = [run_kidney(kidney_mask, dir_output) for kidney_mask in tqdm(kidney_masks, desc='Extracting shape features..')]
 
     # Compute in parallel
     logging.info("Stage 7: Scheduling feature extraction")
@@ -38,10 +35,9 @@ def run(build):
         logging.info(f"No valid features computed")
         return
     dmr_file = os.path.join(dir_output, f'all_kidneys')
-    pydmr.concat(dmr_files, dmr_file, cleanup=True)
+    pydmr.concat(dmr_files, dmr_file)
 
-    # # Delete source files
-    # [Path(f).unlink() for f in dmr_files]
+    logging.info("Stage 7: Completed feature extraction")
 
 
 def compute_shape_features(mask_series, dir_output):

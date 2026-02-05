@@ -9,7 +9,6 @@ def run(build):
 
     pipe.setup_pipeline(build, PIPELINE)
 
-    # # Compute stages
     # ppln.stage_1_normalize_controls.run(build)
     # ppln.stage_2_display_controls.run(build)
     # ppln.stage_3_average_controls.run(build)
@@ -18,7 +17,7 @@ def run(build):
     # ppln.stage_6_display_normalized.run(build)
     # ppln.stage_7_extract_features.run(build)
     # ppln.stage_8_export.run(build)
-    ppln.stage_9_stack_normalized.run(build)
+    ppln.stage_9_stack_normalized.run(build) 
     ppln.stage_10_dice_matrix.run(build)
     ppln.stage_11_hausdorff_matrix.run(build)
     ppln.stage_12_spectral_pca.run(build)

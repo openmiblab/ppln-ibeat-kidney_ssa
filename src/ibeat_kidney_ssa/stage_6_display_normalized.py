@@ -10,9 +10,10 @@ from ibeat_kidney_ssa.utils import data, pipe
 PIPELINE = 'kidney_ssa'
 
 def run(build):
+
+    logging.info("Stage 6 --- Displaying normalized kidneys ---")
     dir_input = os.path.join(build, PIPELINE, 'stage_5_normalize')
     dir_output = pipe.setup_stage(build, PIPELINE, __file__)
-
     dir_png = os.path.join(dir_output, 'images')
     os.makedirs(dir_png, exist_ok=True)
 

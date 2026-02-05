@@ -12,11 +12,10 @@ PIPELINE = 'kidney_ssa'
 
 
 def run(build):
-    # Set the stage
+    
+    logging.info("Stage 9 --- Stacking normalized kidneys ---")
     dir_input = os.path.join(build, PIPELINE, 'stage_5_normalize')
     dir_output = pipe.setup_stage(build, PIPELINE, __file__)
-
-    logging.info("Stage 9 --- Stacking normalized kidneys ---")
 
     # 1. Get all baseline kidneys and labels in alphabetic order
     kidney_masks = [k for k in npz.series(dir_input) if k[2][0] in ['Visit1', 'Baseline']]
@@ -59,7 +58,7 @@ def run(build):
         
         # vol_data is now freed from RAM for the next iteration
 
-    logging.info(f"Stage 9: Saved mask matrix")
+    logging.info(f"Stage 9: Saved stacked mask array")
 
 
 
