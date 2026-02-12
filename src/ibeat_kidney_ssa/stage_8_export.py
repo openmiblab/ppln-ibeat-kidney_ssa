@@ -14,7 +14,7 @@ def run(build):
 
     logging.info("Stage 8 --- Exporting shape features ---")
     dir_measure = os.path.join(build, PIPELINE, 'stage_7_extract_features')
-    dir_output = pipe.setup_stage(build, PIPELINE, __file__)
+    dir_output = pipe.stage_output_dir(build, PIPELINE, __file__)
     
     today = date.today().strftime("%Y-%m-%d")
 
@@ -91,11 +91,6 @@ def fix_exeter_volunteer(harmonized_id, visit_nr):
 
 if __name__=='__main__':
 
-    BUILD = r'C:\Users\md1spsx\Documents\Data\iBEAt_Build'
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--build", type=str, default=BUILD, help="Build folder")
-    args = parser.parse_args()
-
-    run(args.build)
+    BUILD = r"C:\Users\md1spsx\Documents\Data\iBEAt_Build"
+    pipe.run_script(run, BUILD, PIPELINE)
         

@@ -18,6 +18,7 @@ dependencies = [
   'vreg',
   'miblab-ssa',
   'miblab-plot',
+  'seaborn',
 ]
 
 [tool.setuptools.packages.find]

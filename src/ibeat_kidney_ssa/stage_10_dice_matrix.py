@@ -1,6 +1,5 @@
 import os
 import logging
-import argparse
 import pandas as pd
 import dask.array as da
 import miblab_ssa as ssa
@@ -14,7 +13,7 @@ def run(build):
 
     logging.info("Stage 10 --- Computing dice matrix ---")
     dir_input = os.path.join(build, PIPELINE, 'stage_9_stack_normalized')
-    dir_output = pipe.setup_stage(build, PIPELINE, __file__)
+    dir_output = pipe.stage_output_dir(build, PIPELINE, __file__)
 
     # Define the input path
     zarr_path = os.path.join(dir_input, 'normalized_kidney_masks.zarr')
@@ -34,9 +33,4 @@ def run(build):
 if __name__ == '__main__':
 
     BUILD = r"C:\Users\md1spsx\Documents\Data\iBEAt_Build"
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--build", type=str, default=BUILD, help="Build folder")
-    args = parser.parse_args()
-
-    run(args.build)
+    pipe.run_dask_script(run, BUILD, PIPELINE)

@@ -16,7 +16,7 @@ def run(build):
 
     logging.info("Stage 3 --- Computation of average control kidney ---")
     dir_input = os.path.join(build, PIPELINE, 'stage_1_normalize_controls')
-    dir_output = pipe.setup_stage(build, PIPELINE, __file__)
+    dir_output = pipe.stage_output_dir(build, PIPELINE, __file__)
 
     logging.info("Stage 3. Loading and sorting masks")
     kidney_masks = [k for k in npz.series(dir_input) if k[2][0] == 'Visit1']
@@ -58,9 +58,4 @@ def run(build):
 if __name__ == '__main__':
 
     BUILD = r"C:\Users\md1spsx\Documents\Data\iBEAt_Build"
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--build", type=str, default=BUILD, help="Build folder")
-    args = parser.parse_args()
-
-    run(args.build)
+    pipe.run_script(run, BUILD, PIPELINE)

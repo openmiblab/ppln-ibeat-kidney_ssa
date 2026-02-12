@@ -1,6 +1,5 @@
 import os
 import logging
-import argparse
 
 from dbdicom import npz
 from miblab_plot import pvplot, mp4
@@ -13,7 +12,7 @@ def run(build):
 
     logging.info("Stage 6 --- Displaying normalized kidneys ---")
     dir_input = os.path.join(build, PIPELINE, 'stage_5_normalize')
-    dir_output = pipe.setup_stage(build, PIPELINE, __file__)
+    dir_output = pipe.stage_output_dir(build, PIPELINE, __file__)
     dir_png = os.path.join(dir_output, 'images')
     os.makedirs(dir_png, exist_ok=True)
 
@@ -35,9 +34,4 @@ def run(build):
 if __name__ == '__main__':
 
     BUILD = r"C:\Users\md1spsx\Documents\Data\iBEAt_Build"
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--build", type=str, default=BUILD, help="Build folder")
-    args = parser.parse_args()
-
-    run(args.build)
+    pipe.run_script(run, BUILD, PIPELINE)

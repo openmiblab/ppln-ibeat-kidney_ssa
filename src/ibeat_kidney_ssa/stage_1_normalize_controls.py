@@ -16,7 +16,7 @@ def run(build):
 
     logging.info("Stage 1 --- Normalize controls ---")
     dir_input = os.path.join(build, 'kidney_shape', 'stage_3_edit', 'Controls')
-    dir_output = pipe.setup_stage(build, PIPELINE, __file__)
+    dir_output = pipe.stage_output_dir(build, PIPELINE, __file__)
 
     logging.info("Stage 1. Scheduling tasks..")
     kidney_labels = db.series(dir_input)
@@ -78,9 +78,4 @@ def normalize_kidneys(kidney_label, db_normalize):
 if __name__ == '__main__':
 
     BUILD = r"C:\Users\md1spsx\Documents\Data\iBEAt_Build"
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--build", type=str, default=BUILD, help="Build folder")
-    args = parser.parse_args()
-
-    run(args.build)
+    pipe.run_script(run, BUILD, PIPELINE)

@@ -13,7 +13,7 @@ PIPELINE = 'kidney_ssa'
 
 def run(build, client):
 
-    logging.info("Stage 13 --- Chebyshev PCA ---")
+    logging.info("Stage 17 --- Radial basis PCA ---")
     dir_input = os.path.join(build, PIPELINE, 'stage_9_stack_normalized')
     dir_output = pipe.stage_output_dir(build, PIPELINE, __file__)
 
@@ -21,54 +21,56 @@ def run(build, client):
     masks_path = os.path.join(dir_input, 'normalized_kidney_masks.zarr')
 
     # Outputs
-    feature_path = os.path.join(dir_output, 'chebyshev_features.zarr')
-    pca_path = os.path.join(dir_output, f"chebyshev_components.zarr")
-    scores_path = os.path.join(dir_output, f"chebyshev_scores.zarr")
-    modes_path = os.path.join(dir_output, f"chebyshev_modes.zarr")
-    dir_png = os.path.join(dir_output, 'images')
-    movie_file = os.path.join(dir_output, 'chebyshev_modes.mp4')
-    cumulative_dice = os.path.join(dir_output, 'chebyshev_performance_cumulative_dice.csv')
-    marginal_dice = os.path.join(dir_output, 'chebyshev_performance_marginal_dice.csv')
-    pca_performance_plot = os.path.join(dir_output, 'chebyshev_performance_plot.png')
+    model = 'rbf'
+    feature_path = os.path.join(dir_output, f'{model}_features.zarr')
+    pca_path = os.path.join(dir_output, f"{model}_components.zarr")
+    scores_path = os.path.join(dir_output, f"{model}_scores.zarr")
+    modes_path = os.path.join(dir_output, f"{model}_modes.zarr")
+    dir_png = os.path.join(dir_output, f'images')
+    movie_file = os.path.join(dir_output, f"{model}_modes.mp4")
+    cumulative_dice = os.path.join(dir_output, f"{model}_performance_cumulative_dice.csv")
+    marginal_dice = os.path.join(dir_output, f"{model}_performance_marginal_dice.csv")
+    pca_performance_plot = os.path.join(dir_output, f"{model}_performance_plot.png")
 
     # Variables
     kwargs = {
-        "order": 27, #4060
+        "grid_size": 16,
+        "epsilon": 4,
     }
 
     # Computation
-    logging.info(f"Stage 13.1 Building feature matrix")
-    pipe.adjust_workers(client, 4)
+    logging.info(f"Stage 17.1 Building {model} feature matrix")
+    pipe.adjust_workers(client, 8)
     ssa.features_from_dataset_zarr(
-        ssa.sdf_cheby.features_from_mask, 
+        ssa.sdf_rbf.features_from_mask, 
         masks_path, 
         feature_path, 
-        **kwargs,
+        **kwargs, 
     )
 
-    logging.info("Stage 13.2 Computing PCA")
-    pipe.adjust_workers(client, 1)
+    logging.info("Stage 17.2 Computing PCA")
+    pipe.adjust_workers(client, 2)
     ssa.pca_from_features_zarr(feature_path, pca_path)
     ssa.plot_pca_performance(pca_path, pca_performance_plot, n_components=200)
 
-    logging.info("Stage 13.3 Compute chebyshev scores")
-    pipe.adjust_workers(client, 1)
+    logging.info("Stage 17.3 Compute scores")
+    pipe.adjust_workers(client, 2)
     ssa.scores_from_features_zarr(feature_path, pca_path, scores_path)
 
-    logging.info("Stage 13.4 Compute principal modes")
-    pipe.adjust_workers(client, 4)
+    logging.info("Stage 17.4 Compute principal modes")
+    pipe.adjust_workers(client, 8)
     ssa.modes_from_pca_zarr(
-        ssa.sdf_cheby.mask_from_features, 
+        ssa.sdf_rbf.mask_from_features, 
         pca_path, 
         modes_path, 
         n_components=8, 
         max_coeff=10,
     )
 
-    logging.info("Stage 13.5 Measure model performance")
+    logging.info("Stage 17.5 Measure model performance")
     pipe.adjust_workers(client, 8)
     ssa.pca_performance(
-        ssa.sdf_cheby.mask_from_features, 
+        ssa.sdf_rbf.mask_from_features, 
         pca_path, 
         scores_path, 
         masks_path, 
@@ -78,11 +80,11 @@ def run(build, client):
     )
     ssa.plot_pca_performance(pca_path, pca_performance_plot, marginal_dice, cumulative_dice)
 
-    logging.info("Stage 13.6 Display principal modes")
+    logging.info("Stage 17.6 Display principal modes")
     pipe.adjust_workers(client, 8)
     display_modes(modes_path, dir_png, movie_file)
 
-    logging.info("Stage 13: Chebyshev PCA successfully completed.")
+    logging.info("Stage 17: Radial basis PCA successfully completed.")
 
 
 def display_modes(modes_path, dir_png, movie_file):

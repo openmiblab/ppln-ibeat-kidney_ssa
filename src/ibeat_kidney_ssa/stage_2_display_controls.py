@@ -13,7 +13,7 @@ def run(build):
 
     logging.info("Stage 2 --- Display controls ---")
     dir_input = os.path.join(build, 'kidney_ssa', 'stage_1_normalize_controls')
-    dir_output = pipe.setup_stage(build, PIPELINE, __file__)
+    dir_output = pipe.stage_output_dir(build, PIPELINE, __file__)
     dir_png = os.path.join(dir_output, 'images')
     os.makedirs(dir_png, exist_ok=True)
 
@@ -33,9 +33,4 @@ def run(build):
 if __name__ == '__main__':
 
     BUILD = r"C:\Users\md1spsx\Documents\Data\iBEAt_Build"
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--build", type=str, default=BUILD, help="Build folder")
-    args = parser.parse_args()
-
-    run(args.build)
+    pipe.run_script(run, BUILD, PIPELINE)

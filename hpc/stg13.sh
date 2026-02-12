@@ -1,12 +1,12 @@
 #!/bin/bash   
-#SBATCH --mem=32G         
-#SBATCH --cpus-per-task=8
+#SBATCH --mem=128G         
+#SBATCH --cpus-per-task=16
 #SBATCH --time=72:00:00
 #SBATCH --mail-user=s.sourbron@sheffield.ac.uk
 #SBATCH --mail-type=FAIL,END
-#SBATCH --job-name=kssa
-#SBATCH --output=logs/kssa.out
-#SBATCH --error=logs/kssa.err
+#SBATCH --job-name=stg13
+#SBATCH --output=logs/stg13.out
+#SBATCH --error=logs/stg13.err
 
 # Unsets the CPU binding policy.
 # Some clusters automatically bind threads to cores; unsetting it can 
@@ -30,5 +30,5 @@ BUILD="/mnt/parscratch/users/$(whoami)/data/iBEAt_Build"
 ARCHIVE="login1:/shared/abdominal_imaging/Archive/iBEAt_Build"
 
 # srun runs your program on the allocated compute resources managed by Slurm
-srun "$ENV/bin/python" "$CODE/ppln.py" --build="$BUILD"
+srun "$ENV/bin/python" "$CODE/stage_13_chebyshev_pca.py" --build="$BUILD"
 rsync -av --no-group --no-perms "$BUILD/kidney_ssa" "$ARCHIVE"
