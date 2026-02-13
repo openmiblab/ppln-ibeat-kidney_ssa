@@ -1,5 +1,5 @@
 #!/bin/bash   
-#SBATCH --mem=128G         
+#SBATCH --mem=64G         
 #SBATCH --cpus-per-task=16
 #SBATCH --time=72:00:00
 #SBATCH --mail-user=s.sourbron@sheffield.ac.uk
@@ -30,5 +30,5 @@ BUILD="/mnt/parscratch/users/$(whoami)/data/iBEAt_Build"
 ARCHIVE="login1:/shared/abdominal_imaging/Archive/iBEAt_Build"
 
 # srun runs your program on the allocated compute resources managed by Slurm
-srun "$ENV/bin/python" "$CODE/stage_16_wavelet_pca.py" --build="$BUILD"
+srun "$ENV/bin/python" "$CODE/stage_16_rbf_pca.py" --build="$BUILD"
 rsync -av --no-group --no-perms "$BUILD/kidney_ssa" "$ARCHIVE"

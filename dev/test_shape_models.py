@@ -37,19 +37,19 @@ def display_two_kidneys(build):
     spacing = vol.spacing
 
     t0 = time.perf_counter()
-    # mask_rec = ssa.sdf_cheby.smooth_mask(mask, order=32) # 27: n=4060, dice 0.973, 14s
-    mask_rec = ssa.sdf_surfleg.smooth_mask(mask, order=27)  # : n=4060, dice 0.973, 10s
+    # mask_rec = ssa.sdf_ft.smooth_mask(mask, order=19) # 19: n=4019, dice 0.972, 5.1s
+    # mask_rec = ssa.sdf_cheby.smooth_mask(mask, order=27)  # 27: n=4060, dice 0.973, 261s
+    # mask_rec = ssa.sdf_legendre.smooth_mask(mask, order=27) # 27: n=4060, dice 0.974, 250s
+    # mask_rec = ssa.sdf_spline.smooth_mask(mask, order=16) # : n=4096, dice 0.974, 19s
+    mask_rec = ssa.sdf_rbf.smooth_mask(mask, order=16, epsilon=4)  #16 : n=4096, dice , s
+
     # mask_rec = sdf_ft_simple.smooth_mask(mask, order=16) # 16: n=4098, dice 0.972, 5.5s
-    # mask_rec = ssa.sdf_ft.smooth_mask(mask, order=32) # 19: n=4019, dice 0.972, 5.1s
     # mask_rec = ssa.pdm.smooth_mask(mask, subdivisions=2) # 4, n=1926
     # mask_rec = ssa.sdf_wvlt.smooth_mask(mask, min_level=3, order=9) # dice 0.993, 11MB
     # mask_rec = ssa.sdf_wvlt.smooth_mask(mask, min_level=1, order=7) # dice 0.984, 9.7MB
     # mask_rec = ssa.sdf_wvlt.smooth_mask(mask, min_level=1, order=8) # dice 0.992, 70MB
-    # mask_rec = ssa.sdf_rbf.smooth_mask(mask, grid_size=16, epsilon=4)  # : n=4096, dice 0.95, 16s
-    
     # mask_rec = ssa.sdf_zernike.smooth_mask(mask, order=27)  # : n=4060, dice 0.973, 10s
-    # mask_rec = ssa.sdf_surfleg.smooth_mask(mask, order=27)  # : n=4060, dice 0.981, 20s
-    # mask_rec = ssa.sdf_spline.smooth_mask(mask, n_grid=16) # : n=4096, dice 0.982, 8.3s
+    
 
     t1 = time.perf_counter()
     print(f"Computation time: {t1 - t0:.6f} s")

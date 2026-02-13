@@ -9,7 +9,7 @@ PIPELINE = 'kidney_ssa'
 
 def run(build, client):
 
-    logging.info("Stage 15 --- Spline PCA ---")
+    logging.info("Stage 16 --- Radial basis PCA ---")
     dir_input = os.path.join(build, PIPELINE, 'stage_9_stack_normalized')
     dir_output = pipe.stage_output_dir(build, PIPELINE, __file__)
 
@@ -32,33 +32,34 @@ def run(build, client):
     recon_png = os.path.join(dir_output, 'recon_png')
     recon_movie = os.path.join(dir_output, 'recon.mp4')
 
-    logging.info(f"Stage 15.1 Building feature matrix")
+    logging.info(f"Stage 16.1 Building feature matrix")
     pipe.adjust_workers(client, 4)
     ssa.features_from_dataset_zarr(
-        ssa.sdf_spline.features_from_mask, 
+        ssa.sdf_rbf.features_from_mask, 
         masks_path, 
         feature_path, 
         order=16, # 4096 features
+        epsilon=4,
     )
 
-    logging.info("Stage 15.2 Computing PCA")
+    logging.info("Stage 16.2 Computing PCA")
     pipe.adjust_workers(client, 16)
     ssa.pca_from_features_zarr(feature_path, pca_path)
 
-    logging.info("Stage 15.3 Compute spline scores")
+    logging.info("Stage 16.3 Compute radial basis scores")
     pipe.adjust_workers(client, 16)
     ssa.scores_from_features_zarr(feature_path, pca_path, scores_path)
 
-    logging.info("Stage 15.4 Compute principal modes")
+    logging.info("Stage 16.4 Compute principal modes")
     pipe.adjust_workers(client, 16)
     ssa.modes_from_pca_zarr(pca_path, feature_modes_path, n_components=8, max_coeff=8)
     ssa.dataset_from_features_zarr(
-        ssa.sdf_spline.mask_from_features, 
+        ssa.sdf_rbf.mask_from_features, 
         feature_modes_path, 
         mask_modes_path,
     )
 
-    logging.info("Stage 15.5 Measure model performance")
+    logging.info("Stage 16.5 Measure model performance")
     pipe.adjust_workers(client, 16)
     ssa.pca_performance(
         pca_path, 
@@ -77,11 +78,11 @@ def run(build, client):
         n_components=200,
     )
 
-    logging.info("Stage 15.6 Display principal modes")
+    logging.info("Stage 16.6 Display principal modes")
     pipe.adjust_workers(client, 16)
     display.modes(mask_modes_path, dir_png, movie_file)
 
-    logging.info("Stage 15.7 Display reconstruction accuracy")
+    logging.info("Stage 16.7 Display reconstruction accuracy")
     labels = display.get_outlier_labels(cumulative_mse, n=8)
     ssa.cumulative_features_from_scores_zarr(
         pca_path, 
@@ -92,13 +93,13 @@ def run(build, client):
         max_components=50,
     )
     ssa.dataset_from_features_zarr(
-        ssa.sdf_spline.mask_from_features, 
+        ssa.sdf_rbf.mask_from_features, 
         feature_recon, 
         mask_recon,
     )
     display.recon(mask_recon, recon_png, recon_movie)
 
-    logging.info("Stage 15: Spline PCA successfully completed.")
+    logging.info("Stage 16: Radial basis PCA successfully completed.")
 
 
 if __name__ == '__main__':
