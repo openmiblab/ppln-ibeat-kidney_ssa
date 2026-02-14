@@ -81,22 +81,12 @@ def run(build, client):
         step_size=10, 
         max_components=100,
     )
-    ssa.dataset_from_features(
-        model.mask_from_features, 
-        feature_recon_err, 
-        mask_recon_err,
-    )
     logging.info("Stage 15.6 Computing principal modes")
     ssa.modes_from_pca(
         pca, 
         feature_modes, 
         n_components=8, 
         max_coeff=8,
-    )
-    ssa.dataset_from_features(
-        model.mask_from_features, 
-        feature_modes, 
-        mask_modes,
     )
     logging.info("Stage 15.7 Computing reconstructions")
     ssa.features_from_scores(
@@ -105,18 +95,23 @@ def run(build, client):
         feature_recon, 
         n_components=25,
     )
+    logging.info("Stage 15.8 Converting features to masks")
     ssa.dataset_from_features(
-        model.mask_from_features, 
-        feature_recon, 
-        mask_recon,
+        model.mask_from_features, feature_recon_err, mask_recon_err,
     )
-    logging.info("Stage 15.8 Displaying reconstruction")
+    ssa.dataset_from_features(
+        model.mask_from_features, feature_modes, mask_modes,
+    )
+    ssa.dataset_from_features(
+        model.mask_from_features, feature_recon, mask_recon,
+    )
+    logging.info("Stage 15.9 Displaying reconstruction")
     display.recon(mask_recon, recon_png, recon_mp4)
 
-    logging.info("Stage 15.9 Displaying reconstruction error")
+    logging.info("Stage 15.10 Displaying reconstruction error")
     display.recon_err(mask_recon_err, recon_err_png, recon_err_mp4)
 
-    logging.info("Stage 15.10 Displaying principal modes")
+    logging.info("Stage 15.11 Displaying principal modes")
     display.modes(mask_modes, modes_png, modes_mp4)
     
     logging.info("Stage 15 --- Spline PCA succesfully completed ---")

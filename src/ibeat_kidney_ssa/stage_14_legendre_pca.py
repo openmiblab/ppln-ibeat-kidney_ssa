@@ -81,42 +81,32 @@ def run(build, client):
         step_size=10, 
         max_components=100,
     )
-    ssa.dataset_from_features(
-        model.mask_from_features, 
-        feature_recon_err, 
-        mask_recon_err,
-    )
+
     logging.info("Stage 14.6 Computing principal modes")
     ssa.modes_from_pca(
-        pca, 
-        feature_modes, 
-        n_components=8, 
-        max_coeff=8,
-    )
-    ssa.dataset_from_features(
-        model.mask_from_features, 
-        feature_modes, 
-        mask_modes,
+        pca, feature_modes, n_components=8, max_coeff=8,
     )
     logging.info("Stage 14.7 Computing reconstructions")
     ssa.features_from_scores(
-        pca, 
-        scores, 
-        feature_recon, 
-        n_components=25,
+        pca, scores, feature_recon, n_components=25,
+    )
+    logging.info("Stage 14.8 Converting features to masks")
+    ssa.dataset_from_features(
+        model.mask_from_features, feature_modes, mask_modes,
     )
     ssa.dataset_from_features(
-        model.mask_from_features, 
-        feature_recon, 
-        mask_recon,
+        model.mask_from_features, feature_recon_err, mask_recon_err,
     )
-    logging.info("Stage 14.8 Displaying reconstruction")
+    ssa.dataset_from_features(
+        model.mask_from_features, feature_recon, mask_recon,
+    )
+    logging.info("Stage 14.9 Displaying reconstruction")
     display.recon(mask_recon, recon_png, recon_mp4)
 
-    logging.info("Stage 14.9 Displaying reconstruction error")
+    logging.info("Stage 14.10 Displaying reconstruction error")
     display.recon_err(mask_recon_err, recon_err_png, recon_err_mp4)
 
-    logging.info("Stage 14.10 Displaying principal modes")
+    logging.info("Stage 14.11 Displaying principal modes")
     display.modes(mask_modes, modes_png, modes_mp4)
     
     logging.info("Stage 14 --- Legendre PCA succesfully completed ---")
