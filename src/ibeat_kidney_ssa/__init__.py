@@ -10,6 +10,4 @@ from . import (
     stage_8_export,
     stage_9_stack_normalized,
     stage_10_dice_matrix,
-    stage_12_spectral_pca,
-    stage_13_chebyshev_pca,
 )

@@ -1,6 +1,6 @@
 #!/bin/bash   
-#SBATCH --mem=64G         
-#SBATCH --cpus-per-task=16
+#SBATCH --mem=72G         
+#SBATCH --cpus-per-task=24
 #SBATCH --time=72:00:00
 #SBATCH --mail-user=s.sourbron@sheffield.ac.uk
 #SBATCH --mail-type=FAIL,END
@@ -22,6 +22,10 @@ export SLURM_EXPORT_ENV=ALL
 # (On HPC systems, software is usually installed as “modules” to avoid version conflicts.)
 module load Anaconda3/2024.02-1
 module load Python/3.10.8-GCCcore-12.2.0 # essential to load latest GCC
+module load Mesa/22.2.4-GCCcore-12.2.0 # This is needed for pyvista plotting
+
+# Tell VTK/PyVista to use the OSMesa (Off-Screen) library
+export VTK_DEFAULT_OPENGL_WINDOW=vtkOSOpenGLRenderWindow
 
 # Define path variables here
 ENV="/mnt/parscratch/users/$(whoami)/envs/kssa"

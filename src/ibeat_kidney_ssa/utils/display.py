@@ -35,6 +35,15 @@ def get_outlier_labels(data_path: str, n: int = 5, column_idx: int = 0):
 
 def recon(mask_path, dir_png, movie_file):
     recon = zarr.open(mask_path, mode='r')
+    masks = recon['masks']
+    labels = recon['labels'][:]
+    ncols, nrows = 16, 8
+    pvplot.rotating_mosaics_da(dir_png, masks, labels, chunksize=ncols * nrows, nviews=25, columns=ncols, rows=nrows)
+    mp4.images_to_video(dir_png, movie_file, fps=16)
+
+
+def recon_err(mask_path, dir_png, movie_file):
+    recon = zarr.open(mask_path, mode='r')
     masks = recon['masks'][:].transpose(1, 0, 2, 3, 4)
     n_rows = masks.shape[1]
     cols = recon.attrs['saved_steps'][:]

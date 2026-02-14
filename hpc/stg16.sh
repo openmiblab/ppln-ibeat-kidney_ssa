@@ -1,5 +1,5 @@
 #!/bin/bash   
-#SBATCH --mem=64G         
+#SBATCH --mem=128G         
 #SBATCH --cpus-per-task=16
 #SBATCH --time=72:00:00
 #SBATCH --mail-user=s.sourbron@sheffield.ac.uk
@@ -22,6 +22,10 @@ export SLURM_EXPORT_ENV=ALL
 # (On HPC systems, software is usually installed as “modules” to avoid version conflicts.)
 module load Anaconda3/2024.02-1
 module load Python/3.10.8-GCCcore-12.2.0 # essential to load latest GCC
+module load Mesa/22.2.4-GCCcore-12.2.0 # This is needed for pyvista plotting
+
+# Tell VTK/PyVista to use the OSMesa (Off-Screen) library
+export VTK_DEFAULT_OPENGL_WINDOW=vtkOSOpenGLRenderWindow
 
 # Define path variables here
 ENV="/mnt/parscratch/users/$(whoami)/envs/kssa"
@@ -30,5 +34,5 @@ BUILD="/mnt/parscratch/users/$(whoami)/data/iBEAt_Build"
 ARCHIVE="login1:/shared/abdominal_imaging/Archive/iBEAt_Build"
 
 # srun runs your program on the allocated compute resources managed by Slurm
-srun "$ENV/bin/python" "$CODE/stage_16_rbf_pca.py" --build="$BUILD"
+srun "$ENV/bin/python" "$CODE/stage_16_pspline_pca.py" --build="$BUILD"
 rsync -av --no-group --no-perms "$BUILD/kidney_ssa" "$ARCHIVE"

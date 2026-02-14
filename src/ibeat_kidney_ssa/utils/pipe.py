@@ -4,6 +4,7 @@ from pathlib import Path
 import re
 import argparse
 import psutil
+from joblib import parallel_backend
 
 
 
@@ -76,6 +77,8 @@ def get_dask_client(min_ram_per_worker = 4.0): # Increase this for heavier data
         memory_limit=memory_limit_per_worker
     )
     return Client(cluster)
+
+
 
 
 def adjust_workers(client, min_ram_per_worker=4.0):
@@ -179,7 +182,8 @@ def run_dask_stage(run, default_build, pipeline, module, min_ram_per_worker = 4.
     )
 
     client = get_dask_client(min_ram_per_worker = min_ram_per_worker)
-    run(args.build, client)
+    with parallel_backend('dask'):
+        run(args.build, client)
     client.close()
 
 

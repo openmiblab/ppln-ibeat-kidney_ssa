@@ -16,8 +16,6 @@ def run(build, client):
     ppln.stage_9_stack_normalized.run(build) 
     ppln.stage_10_dice_matrix.run(build)
     ppln.stage_11_hausdorff_matrix.run(build)
-    ppln.stage_12_spectral_pca.run(build, client)
-    ppln.stage_13_chebyshev_pca.run(build, client)
 
 
 if __name__=='__main__':

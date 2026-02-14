@@ -2,7 +2,7 @@ import os
 import logging
 
 import miblab_ssa as ssa
-import miblab_ssa.sdf_spline as model
+import miblab_ssa.sdf_pspline as model
 
 from ibeat_kidney_ssa.utils import pipe, display
 
@@ -10,7 +10,7 @@ PIPELINE = 'kidney_ssa'
 
 def run(build, client):
 
-    logging.info("Stage 15 --- Spline PCA ---")
+    logging.info("Stage 16 --- Pyramidal p-spline PCA ---")
     dir_input = os.path.join(build, PIPELINE, 'stage_9_stack_normalized')
     dir_output = pipe.stage_output_dir(build, PIPELINE, __file__)
 
@@ -43,20 +43,20 @@ def run(build, client):
     recon_mp4 = os.path.join(dir_output, 'movie_recon.mp4')
     recon_err_mp4 = os.path.join(dir_output, 'movie_recon_err.mp4')
 
-    logging.info(f"Stage 15.1 Building feature matrix")
+    logging.info(f"Stage 16.1 Building feature matrix")
     ssa.features_from_dataset(
         model.features_from_mask, 
         masks, 
         features, 
-        order = 16, 
+        orders = (6, 12, 18),
     )
-    logging.info("Stage 15.2 Computing PCA")
+    logging.info("Stage 16.2 Computing PCA")
     ssa.pca_from_features(features, pca)
 
-    logging.info("Stage 15.3 Computing PCA scores")
+    logging.info("Stage 16.3 Computing PCA scores")
     ssa.scores_from_features(features, pca, scores)
 
-    logging.info("Stage 15.4 Computing PCA performance")
+    logging.info("Stage 16.4 Computing PCA performance")
     ssa.pca_performance(
         pca, scores, 
         features, 
@@ -71,7 +71,7 @@ def run(build, client):
         cumulative_mse, 
         n_components=200,
     )
-    logging.info("Stage 15.5 Computing reconstruction accuracy")
+    logging.info("Stage 16.5 Computing reconstruction accuracy")
     labels = display.get_outlier_labels(cumulative_mse, n=8)
     ssa.cumulative_features_from_scores(
         pca, 
@@ -86,7 +86,7 @@ def run(build, client):
         feature_recon_err, 
         mask_recon_err,
     )
-    logging.info("Stage 15.6 Computing principal modes")
+    logging.info("Stage 16.6 Computing principal modes")
     ssa.modes_from_pca(
         pca, 
         feature_modes, 
@@ -98,7 +98,7 @@ def run(build, client):
         feature_modes, 
         mask_modes,
     )
-    logging.info("Stage 15.7 Computing reconstructions")
+    logging.info("Stage 16.7 Computing reconstructions")
     ssa.features_from_scores(
         pca, 
         scores, 
@@ -110,19 +110,19 @@ def run(build, client):
         feature_recon, 
         mask_recon,
     )
-    logging.info("Stage 15.8 Displaying reconstruction")
+    logging.info("Stage 16.8 Displaying reconstruction")
     display.recon(mask_recon, recon_png, recon_mp4)
 
-    logging.info("Stage 15.9 Displaying reconstruction error")
+    logging.info("Stage 16.9 Displaying reconstruction error")
     display.recon_err(mask_recon_err, recon_err_png, recon_err_mp4)
 
-    logging.info("Stage 15.10 Displaying principal modes")
+    logging.info("Stage 16.10 Displaying principal modes")
     display.modes(mask_modes, modes_png, modes_mp4)
     
-    logging.info("Stage 15 --- Spline PCA succesfully completed ---")
+    logging.info("Stage 16 --- Pyramidal p-spline PCA succesfully completed ---")
 
 
 if __name__ == '__main__':
 
     BUILD = r"C:\Users\md1spsx\Documents\Data\iBEAt_Build"
-    pipe.run_dask_stage(run, BUILD, PIPELINE, __file__, min_ram_per_worker=3)
+    pipe.run_dask_stage(run, BUILD, PIPELINE, __file__, min_ram_per_worker=8)
