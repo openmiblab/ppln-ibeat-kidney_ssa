@@ -47,12 +47,16 @@ def run(build, client):
     recon_err_mp4 = os.path.join(dir_output, 'movie_recon_err.mp4')
 
     logging.info(f"Stage 12.0 Selecting number of features")
+    pipe.adjust_workers(client, min_ram_per_worker=2)
     ssa.reconstruction_fidelity(
         smooth_mask_func=model.smooth_mask,
         dataset_zarr_path=masks,
         dice_csv_path=dice_feature_selection,
         hausdorff_csv_path=haus_feature_selection,
+        min_order=10, 
+        max_order=24,
     )
+    pipe.adjust_workers(client, min_ram_per_worker=16)
     ssa.plot_reconstruction_fidelity(
         dice_csv_path=dice_feature_selection,
         hausdorff_csv_path=haus_feature_selection,  
