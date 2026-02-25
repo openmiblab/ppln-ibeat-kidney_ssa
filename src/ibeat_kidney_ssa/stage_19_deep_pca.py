@@ -6,91 +6,199 @@ import numpy as np
 import zarr
 
 import miblab_ssa as ssa
+import miblab_ssa.sdf_ft as model
 from miblab_plot import pvplot, mp4
 
-from ibeat_kidney_ssa.utils import pipe
+from ibeat_kidney_ssa.utils import pipe, display
 
 PIPELINE = 'kidney_ssa'
+DEBUG = True
 
 def run(build, client):
 
-    logging.info("Stage 18 --- Deep spectral PCA ---")
+    logging.info("Stage 19 --- Deep spectral PCA ---")
     dir_input = os.path.join(build, PIPELINE, 'stage_9_stack_normalized')
     dir_input_features = os.path.join(build, PIPELINE, 'stage_12_spectral_pca')
     dir_output = pipe.stage_output_dir(build, PIPELINE, __file__)
 
-    # Input data - stack of normalized masks
-    masks_path = os.path.join(dir_input, 'normalized_kidney_masks.zarr')
+    # Input data
+    masks = os.path.join(dir_input, 'normalized_kidney_masks.zarr')
+    features = os.path.join(dir_input_features, 'data_features.zarr')
 
-    # Outputs
-    model = 'deeppca'
-    feature_path = os.path.join(dir_input_features, f'spectral_features.zarr')
-    pca_path = os.path.join(dir_output, f"{model}_components.zarr")
-    model_save_path = os.path.join(dir_output, f"{model}_weights.pth")
-    scores_path = os.path.join(dir_output, f"{model}_scores.zarr")
-    modes_path = os.path.join(dir_output, f"{model}_modes.zarr")
-    dir_png = os.path.join(dir_output, 'images')
-    movie_file = os.path.join(dir_output, f'{model}_modes.mp4')
-    cumulative_dice = os.path.join(dir_output, f'{model}_performance_cumulative_dice.csv')
-    marginal_dice = os.path.join(dir_output, f'{model}_performance_marginal_dice.csv')
-    pca_performance_plot = os.path.join(dir_output, f'{model}_performance_plot.png')
+    # Output - arrays
+    pca = os.path.join(dir_output, f"data_components.zarr")
+    feature_modes = os.path.join(dir_output, f"data_feature_modes.zarr")
+    mask_modes = os.path.join(dir_output, f"data_mask_modes.zarr")
+    feature_recon_err = os.path.join(dir_output, f"data_feature_recon_err.zarr")
+    feature_recon = os.path.join(dir_output, f"data_feature_recon.zarr")
+    mask_recon_err = os.path.join(dir_output, f"data_mask_recon_err.zarr")
+    mask_recon = os.path.join(dir_output, f"data_mask_recon.zarr")
 
-    # Variables
-    kwargs = {
-        "order": 19, # 12066 features
-    }
+    # Output - tables
+    cumulative_mse = os.path.join(dir_output, 'table_cumulative_mse.csv')
+    marginal_mse = os.path.join(dir_output, 'table_marginal_mse.csv')
+    dice_recon_error = os.path.join(dir_output, 'table_dice_recon_error.csv')
+    haus_recon_error = os.path.join(dir_output, 'table_hausdorff_recon_error.csv')
+    scores = os.path.join(dir_output, f"table_scores.csv")
+    normalized_scores = os.path.join(dir_output, f"table_normalized_scores.csv")
+    modes_shape_features = os.path.join(dir_output, f"table_modes_shape_features")
 
-    logging.info("Stage 12.2 Computing PCA")
-    pipe.adjust_workers(client, 16) # 1108 x 12066 x 4 or 500 x 12066 x 8 = 50MB
-    ssa.deep_pca_from_features_zarr(feature_path, pca_path, model_save_path, n_components=200)
-    ssa.plot_pca_performance(pca_path, pca_performance_plot, n_components=200)
+    # Output - images
+    pca_performance = os.path.join(dir_output, 'imgs_performance.png')
+    modes_png = os.path.join(dir_output, 'imgs_modes')
+    modes_sections_png = os.path.join(dir_output, 'imgs_modes_sections')
+    modes_fingerprints = os.path.join(dir_output, 'imgs_modes_fingerprints')
+    recon_png = os.path.join(dir_output, 'imgs_recon')
+    recon_err_png = os.path.join(dir_output, 'imgs_recon_err')
+    recon_performance_img = os.path.join(dir_output, 'imgs_recon_performance.png')
 
-    # logging.info("Stage 12.3 Compute spectral scores")
-    # pipe.adjust_workers(client, 16) 
-    # ssa.deep_scores_from_features_zarr(feature_path, model_save_path, scores_path, chunk_size=500)
+    # Output - movies
+    modes_mp4 = os.path.join(dir_output, 'movie_modes.mp4')
+    recon_mp4 = os.path.join(dir_output, 'movie_recon.mp4')
+    recon_err_mp4 = os.path.join(dir_output, 'movie_recon_err.mp4')
 
-    # logging.info("Stage 12.4 Compute principal modes")
-    # pipe.adjust_workers(client, 16) 
-    # ssa.deep_modes_from_pca_zarr(
-    #   ssa.sdf_ft.mask_from_features, 
-    #   model_save_path, 
-    #   modes_path, 
-    #   n_components=8, 
-    #   max_coeff=10,
-    # )
+    # Output - models
+    model_checkpoint = os.path.join(dir_output, 'model.pth')
 
-    # logging.info("Stage 12.5 Measure model performance")
-    # pipe.adjust_workers(client, 4)
-    # ssa.pca_performance(
-    #     ssa.sdf_ft.mask_from_features, 
-    #     pca_path, 
-    #     scores_path, 
-    #     masks_path, 
-    #     marginal_dice, 
-    #     cumulative_dice, 
-    #     n_components=20,
-    # )
-    # ssa.plot_pca_performance(pca_path, pca_performance_plot, marginal_dice, cumulative_dice)
+    # Hyperparameters
+    n_comp = 128
+    n_outliers_display = 9
+    if DEBUG:
+        epochs = 100
+        n_outliers = 25
+        max_comp = 20
+    else:
+        epochs = 1000
+        n_outliers = None
+        max_comp = 64
 
-    # logging.info("Stage 12.6 Display principal modes")
-    # pipe.adjust_workers(client, 12)
-    # display_modes(modes_path, dir_png, movie_file)
+    logging.info("Stage 19.1 Computing PCA")
+    ssa.deep_pca_from_features(
+        features_zarr_path=features, 
+        model_pth_path=model_checkpoint, 
+        n_components=n_comp, 
+        epochs=epochs
+    )
+    ssa.add_deep_pca_metrics(
+        features_zarr_path=features, 
+        model_pth_path=model_checkpoint,
+    )
 
-    logging.info("Stage 12 --- Spectral PCA succesfully completed ---")
+    logging.info("Stage 19.2 Computing PCA reconstructions")
+    ssa.deep_scores_from_features(
+        features_zarr_path=features, 
+        model_pth_path=model_checkpoint, 
+        scores_csv_path=scores,
+        normalized_scores_csv_path=normalized_scores,
+    )
+    ssa.deep_features_from_scores(
+        model_pth_path=model_checkpoint, 
+        scores_csv_path=scores, 
+        features_zarr_path=feature_recon, 
+        n_components=n_comp
+    )
+    pipe.adjust_workers(client, min_ram_per_worker=2)
+    ssa.dataset_from_features(
+        mask_from_features_func=model.mask_from_features, 
+        features_zarr_path=feature_recon, 
+        dataset_zarr_path=mask_recon
+    )
+    pipe.adjust_workers(client, min_ram_per_worker=16)
+    display.recon(mask_recon, recon_png, recon_mp4)
 
+    logging.info("Stage 19.3 Computing PCA performance")
+    ssa.deep_pca_performance(
+        model_pth_path=model_checkpoint, 
+        scores_csv_path=scores, 
+        gt_features_zarr_path=features, 
+        marginal_mse_csv_path=marginal_mse,
+        cumulative_mse_csv_path=cumulative_mse, 
+        n_components=n_comp,
+    )
+    ssa.plot_deep_pca_performance(
+        model_pth_path=model_checkpoint, 
+        output_image_path=pca_performance, 
+        marginal_mse_path=marginal_mse,  
+        cumulative_mse_path=cumulative_mse, 
+        n_components=n_comp,
+    )
 
-def display_modes(modes_path, dir_png, movie_file):
-    modes = zarr.open(modes_path, mode='r')
-    masks = modes['modes'][:]
-    n_comp = masks.shape[1]
-    coeffs = np.array(modes.attrs['coeffs'][:])
-    labels = np.array([[f"C{y}: {round(x, 1)} x sd" for y in range(n_comp)] for x in coeffs])
-    pvplot.rotating_masks_grid(dir_png, masks, labels, nviews=25)
-    mp4.images_to_video(dir_png, movie_file, fps=16)
+    logging.info("Stage 19.4 Computing reconstruction accuracy")
+    labels = display.get_outlier_labels(cumulative_mse, n=n_outliers)
+    ssa.deep_cumulative_features_from_scores(
+        model_pth_path=model_checkpoint, 
+        scores_csv_path=scores, 
+        gt_features_zarr_path=features,
+        output_zarr_path=feature_recon_err, 
+        target_labels=labels, 
+        step_size=1, 
+        max_components=max_comp,
+    )
+    pipe.adjust_workers(client, min_ram_per_worker=2)
+    ssa.dataset_from_features(
+        mask_from_features_func=model.mask_from_features, 
+        features_zarr_path=feature_recon_err, 
+        dataset_zarr_path=mask_recon_err,
+    )
+    ssa.recon_error(
+        dataset_zarr_path=mask_recon_err, 
+        dice_csv_path=dice_recon_error, 
+        hausdorff_csv_path=haus_recon_error
+    )
+    ssa.plot_pca_reconstruction_performance(
+        dice_csv_path=dice_recon_error, 
+        hausdorff_csv_path=haus_recon_error, 
+        output_image_path=recon_performance_img
+    )
+    pipe.adjust_workers(client, min_ram_per_worker=16)
+    display.recon_err(
+        mask_zarr_path=mask_recon_err, 
+        dir_png=recon_err_png, 
+        movie_file=recon_err_mp4, 
+        n_samples=n_outliers_display,
+        n_components=15,
+    )
+
+    logging.info("Stage 19.5 Computing principal modes")
+    ssa.deep_modes_from_pca(
+        model_pth_path=model_checkpoint, 
+        modes_zarr_path=feature_modes, 
+        n_components=8, 
+        n_coeffs=15,
+        max_coeff=6,
+    )
+    pipe.adjust_workers(client, min_ram_per_worker=2)
+    ssa.dataset_from_features(
+        mask_from_features_func=model.mask_from_features, 
+        features_zarr_path=feature_modes, 
+        dataset_zarr_path=mask_modes
+    )
+    pipe.adjust_workers(client, min_ram_per_worker=16)
+    ssa.plot_mask_sections(
+        dataset_zarr_path=mask_modes, 
+        dir_png=modes_sections_png, 
+    )
+    display.modes(
+        modes_zarr_path=mask_modes, 
+        dir_png=modes_png, 
+        movie_file=modes_mp4,
+    )
+    pipe.adjust_workers(client, min_ram_per_worker=2)
+    ssa.dataset_shapes(
+        dataset_zarr_path=mask_modes, 
+        dir_csv=modes_shape_features, 
+    )
+    pipe.adjust_workers(client, min_ram_per_worker=16)
+    ssa.plot_shape_fingerprints(
+        dir_csv=modes_shape_features,
+        dir_png=modes_fingerprints,
+    )
+
+    logging.info("Stage 19 --- Deep PCA succesfully completed ---")
 
 
 
 if __name__ == '__main__':
 
     BUILD = r"C:\Users\md1spsx\Documents\Data\iBEAt_Build"
-    pipe.run_dask_script(run, BUILD, PIPELINE, min_ram_per_worker=4)
+    pipe.run_dask_stage(run, BUILD, PIPELINE, __file__, min_ram_per_worker=16)

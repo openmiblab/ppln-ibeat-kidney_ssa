@@ -76,6 +76,7 @@ def run(build, client):
     ssa.cumulative_features_from_scores(
         pca, 
         scores, 
+        features,
         feature_recon_err, 
         labels, 
         step_size=10, 
