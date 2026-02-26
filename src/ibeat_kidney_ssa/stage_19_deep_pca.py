@@ -1,32 +1,24 @@
 import os
 import logging
-import argparse
-
-import numpy as np
-import zarr
 
 import miblab_ssa as ssa
 import miblab_ssa.sdf_ft as model
-from miblab_plot import pvplot, mp4
 
 from ibeat_kidney_ssa.utils import pipe, display
 
 PIPELINE = 'kidney_ssa'
-DEBUG = True
+DEBUG = False
 
 def run(build, client):
 
     logging.info("Stage 19 --- Deep spectral PCA ---")
-    dir_input = os.path.join(build, PIPELINE, 'stage_9_stack_normalized')
     dir_input_features = os.path.join(build, PIPELINE, 'stage_12_spectral_pca')
     dir_output = pipe.stage_output_dir(build, PIPELINE, __file__)
 
     # Input data
-    masks = os.path.join(dir_input, 'normalized_kidney_masks.zarr')
     features = os.path.join(dir_input_features, 'data_features.zarr')
 
     # Output - arrays
-    pca = os.path.join(dir_output, f"data_components.zarr")
     feature_modes = os.path.join(dir_output, f"data_feature_modes.zarr")
     mask_modes = os.path.join(dir_output, f"data_mask_modes.zarr")
     feature_recon_err = os.path.join(dir_output, f"data_feature_recon_err.zarr")

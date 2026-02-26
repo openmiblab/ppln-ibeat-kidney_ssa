@@ -62,7 +62,6 @@ def run(build, client):
         hausdorff_csv_path=haus_feature_selection,  
         output_image_path=recon_fidelity,    
     )
-    return
 
     logging.info(f"Stage 12.1 Building feature matrix")
     ssa.features_from_dataset(

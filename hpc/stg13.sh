@@ -1,5 +1,5 @@
 #!/bin/bash   
-#SBATCH --mem=128G         
+#SBATCH --mem=64G         
 #SBATCH --cpus-per-task=16
 #SBATCH --time=72:00:00
 #SBATCH --mail-user=s.sourbron@sheffield.ac.uk

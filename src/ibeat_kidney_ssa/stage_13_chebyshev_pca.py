@@ -31,9 +31,12 @@ def run(build, client):
     # Output - tables
     cumulative_mse = os.path.join(dir_output, 'table_cumulative_mse.csv')
     marginal_mse = os.path.join(dir_output, 'table_marginal_mse.csv')
+    dice_feature_selection = os.path.join(dir_output, 'table_feature_sel_dice.csv')
+    haus_feature_selection = os.path.join(dir_output, 'table_feature_sel_hausdorff.csv')
 
     # Output - images
     pca_performance = os.path.join(dir_output, 'imgs_performance.png')
+    recon_fidelity = os.path.join(dir_output, 'reconstruction_fidelity.png')
     modes_png = os.path.join(dir_output, 'imgs_modes')
     recon_png = os.path.join(dir_output, 'imgs_recon')
     recon_err_png = os.path.join(dir_output, 'imgs_recon_err')
@@ -42,6 +45,23 @@ def run(build, client):
     modes_mp4 = os.path.join(dir_output, 'movie_modes.mp4')
     recon_mp4 = os.path.join(dir_output, 'movie_recon.mp4')
     recon_err_mp4 = os.path.join(dir_output, 'movie_recon_err.mp4')
+
+    logging.info(f"Stage 13.0 Selecting number of features")
+    pipe.adjust_workers(client, min_ram_per_worker=2)
+    ssa.reconstruction_fidelity(
+        smooth_mask_func=model.smooth_mask,
+        dataset_zarr_path=masks,
+        dice_csv_path=dice_feature_selection,
+        hausdorff_csv_path=haus_feature_selection,
+        min_order=10, 
+        max_order=36,
+    )
+    pipe.adjust_workers(client, min_ram_per_worker=16)
+    ssa.plot_reconstruction_fidelity(
+        dice_csv_path=dice_feature_selection,
+        hausdorff_csv_path=haus_feature_selection,  
+        output_image_path=recon_fidelity,    
+    )
 
     logging.info(f"Stage 13.1 Building feature matrix")
     ssa.features_from_dataset(
