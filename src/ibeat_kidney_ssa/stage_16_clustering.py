@@ -29,7 +29,7 @@ from sklearn.metrics import adjusted_rand_score, normalized_mutual_info_score
 # Set backend for non-interactive environments
 matplotlib.use('Agg')
 
-from ibeat_kidney_ssa.utils import pipe
+from miblab import pipe
 
 PIPELINE = 'kidney_ssa'
 

@@ -8,7 +8,7 @@ import numpyradiomics as npr
 from dbdicom import npz
 import dask
 
-from ibeat_kidney_ssa.utils import pipe
+from miblab import pipe
 
 PIPELINE = 'kidney_ssa'
 

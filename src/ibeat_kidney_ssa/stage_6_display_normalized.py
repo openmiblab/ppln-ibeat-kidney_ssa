@@ -3,8 +3,9 @@ import logging
 
 from dbdicom import npz
 from miblab_plot import pvplot, mp4
+from miblab import pipe
 
-from ibeat_kidney_ssa.utils import data, pipe
+from ibeat_kidney_ssa.utils import data
 
 PIPELINE = 'kidney_ssa'
 

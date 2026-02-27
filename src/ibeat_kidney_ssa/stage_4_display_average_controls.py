@@ -3,7 +3,7 @@ import logging
 import argparse
 
 from miblab_plot import pvplot, mp4
-from ibeat_kidney_ssa.utils import pipe
+from miblab import pipe
 
 PIPELINE = 'kidney_ssa'
 

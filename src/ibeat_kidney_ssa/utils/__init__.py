@@ -1,1 +1,1 @@
-from . import data, display, pipe
+from . import data, display

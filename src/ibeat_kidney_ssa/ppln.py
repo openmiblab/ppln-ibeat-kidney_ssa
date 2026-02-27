@@ -1,5 +1,5 @@
 import ibeat_kidney_ssa as ppln
-from ibeat_kidney_ssa.utils import pipe
+from miblab import pipe
 
 PIPELINE = 'kidney_ssa'
 
@@ -13,9 +13,13 @@ def run(build, client):
     # ppln.stage_6_display_normalized.run(build)
     # ppln.stage_7_extract_features.run(build)
     # ppln.stage_8_export.run(build)
-    ppln.stage_9_stack_normalized.run(build) 
-    ppln.stage_10_dice_matrix.run(build)
-    ppln.stage_11_hausdorff_matrix.run(build)
+    # ppln.stage_9_stack_normalized.run(build) 
+    # ppln.stage_10_dice_matrix.run(build)
+    # ppln.stage_11_hausdorff_matrix.run(build)
+    # ppln.stage_12_features.run(build, client, model='spectral')
+    # ppln.stage_12_features.run(build, client, model='chebyshev')
+    ppln.stage_13_representation.run(build, client, model='spectral')
+    ppln.stage_13_representation.run(build, client, model='chebyshev')
 
 
 if __name__=='__main__':

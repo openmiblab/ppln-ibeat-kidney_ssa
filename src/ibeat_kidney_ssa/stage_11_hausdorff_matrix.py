@@ -5,7 +5,7 @@ import pandas as pd
 import dask.array as da
 import miblab_ssa as ssa
 
-from ibeat_kidney_ssa.utils import pipe
+from miblab import pipe
 
 PIPELINE = 'kidney_ssa'
 

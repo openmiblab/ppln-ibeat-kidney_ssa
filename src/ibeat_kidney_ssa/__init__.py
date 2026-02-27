@@ -1,5 +1,4 @@
 from . import (
-    stage_11_hausdorff_matrix,
     stage_1_normalize_controls,
     stage_2_display_controls,
     stage_3_average_controls,
@@ -10,4 +9,7 @@ from . import (
     stage_8_export,
     stage_9_stack_normalized,
     stage_10_dice_matrix,
+    stage_11_hausdorff_matrix,
+    stage_12_features,
+    stage_13_representation,
 )

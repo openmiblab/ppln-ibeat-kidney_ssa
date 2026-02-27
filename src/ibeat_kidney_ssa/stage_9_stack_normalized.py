@@ -1,11 +1,11 @@
 import os
 import logging
-import argparse
 
 from dbdicom import npz
 import miblab_ssa as ssa
+from miblab import pipe
 
-from ibeat_kidney_ssa.utils import data, pipe
+from ibeat_kidney_ssa.utils import data
 
 PIPELINE = 'kidney_ssa'
 

@@ -6,7 +6,7 @@ from datetime import date
 import pydmr
 import pandas as pd
 
-from ibeat_kidney_ssa.utils import pipe
+from miblab import pipe
 
 PIPELINE = 'kidney_ssa'
 

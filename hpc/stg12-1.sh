@@ -1,12 +1,12 @@
 #!/bin/bash   
 #SBATCH --mem=64G         
-#SBATCH --cpus-per-task=16
+#SBATCH --cpus-per-task=24
 #SBATCH --time=72:00:00
 #SBATCH --mail-user=s.sourbron@sheffield.ac.uk
 #SBATCH --mail-type=FAIL,END
-#SBATCH --job-name=stg12
-#SBATCH --output=logs/stg12.out
-#SBATCH --error=logs/stg12.err
+#SBATCH --job-name=stg12-1
+#SBATCH --output=logs/stg12-1.out
+#SBATCH --error=logs/stg12-1.err
 
 # Unsets the CPU binding policy.
 # Some clusters automatically bind threads to cores; unsetting it can 
@@ -33,11 +33,6 @@ CODE="/mnt/parscratch/users/$(whoami)/scripts/ppln-ibeat-kidney_ssa/src/ibeat_ki
 BUILD="/mnt/parscratch/users/$(whoami)/data/iBEAt_Build"
 ARCHIVE="login1:/shared/abdominal_imaging/Archive/iBEAt_Build"
 
-# # Update agile packages on the fly
-# "$ENV/bin/python" -m ensurepip --upgrade
-# "$ENV/bin/python" -m pip install --upgrade pip
-# "$ENV/bin/python" -m pip install -U miblab-ssa miblab-plot
-
 # srun runs your program on the allocated compute resources managed by Slurm
-srun "$ENV/bin/python" "$CODE/stage_12_spectral_pca.py" --build="$BUILD"
-rsync -av --no-group --no-perms "$BUILD/kidney_ssa" "$ARCHIVE"
+srun "$ENV/bin/python" "$CODE/stage_12_features.py" --build="$BUILD" --model="spectral"
+rsync -av --no-group --no-perms "$BUILD/kidney_ssa/stage_12_features" "$ARCHIVE/kidney_ssa"
