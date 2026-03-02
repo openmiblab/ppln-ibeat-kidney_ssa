@@ -59,9 +59,10 @@ def recon_err(
         masks = recon['masks'][:n_samples, ...]
     cols = recon.attrs['saved_steps'][:]
     if n_components is not None:
-        idx = np.r_[:n_components+1, -1]
-        masks = masks[:, idx, ...]
-        cols = np.array(cols)[idx].tolist()
+        if n_components + 1 < masks.shape[1] - 1:
+            idx = np.r_[:n_components+1, -1]
+            masks = masks[:, idx, ...]
+            cols = np.array(cols)[idx].tolist()
     masks = masks.transpose(1, 0, 2, 3, 4)
     n_rows = masks.shape[1] 
     labels = np.array([[f"K{y}: {x}" for y in range(n_rows)] for x in cols])

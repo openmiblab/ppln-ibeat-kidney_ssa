@@ -26,7 +26,7 @@ import zarr
 
 def display_two_kidneys(build):
 
-    dir_input = os.path.join(build, 'kidney_ssa', 'stage_9_stack_normalized')
+    dir_input = os.path.join(build, 'kidney_ssa', 'stage_3_normalize')
     masks = os.path.join(dir_input, 'normalized_kidney_masks.zarr')
 
     input_root = zarr.open(masks, mode='r')
@@ -36,9 +36,9 @@ def display_two_kidneys(build):
     mask = input_root['masks'][mask_idx]
 
     t0 = time.perf_counter()
-    # mask_rec = ssa.sdf_ft.smooth_mask(mask, order=19) # 19: n=4019, dice 0.972, 5.1s
+    mask_rec = ssa.sdf_ft.smooth_mask(mask, order=18) # 19: n=4019, dice 0.972, 5.1s
     # mask_rec = ssa.sdf_cheby.smooth_mask(mask, order=27)  # 27: n=4060, dice 0.973, 261s
-    mask_rec = ssa.sdf_legendre.smooth_mask(mask, order=27) # 27: n=4060, dice 0.974, 250s
+    # mask_rec = ssa.sdf_legendre.smooth_mask(mask, order=27) # 27: n=4060, dice 0.974, 250s
     # mask_rec = ssa.sdf_spline.smooth_mask(mask, order=16) # : n=4096, dice 0.974, 19s
     # mask_rec = ssa.sdf_pspline.smooth_mask(mask, orders=(6, 12, 18)) # : n=7776, dice 0.979, s
     # mask_rec = ssa.sdf_rbf.smooth_mask(mask, order=16, epsilon=4)  #16 : n=4096, dice , s

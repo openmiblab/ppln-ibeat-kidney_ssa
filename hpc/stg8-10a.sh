@@ -4,9 +4,9 @@
 #SBATCH --time=72:00:00
 #SBATCH --mail-user=s.sourbron@sheffield.ac.uk
 #SBATCH --mail-type=FAIL,END
-#SBATCH --job-name=stg13-2
-#SBATCH --output=logs/stg13-2.out
-#SBATCH --error=logs/stg13-2.err
+#SBATCH --job-name=stg8-10a
+#SBATCH --output=logs/stg8-10a.out
+#SBATCH --error=logs/stg8-10a.err
 
 # Unsets the CPU binding policy.
 # Some clusters automatically bind threads to cores; unsetting it can 
@@ -34,5 +34,9 @@ BUILD="/mnt/parscratch/users/$(whoami)/data/iBEAt_Build"
 ARCHIVE="login1:/shared/abdominal_imaging/Archive/iBEAt_Build"
 
 # srun runs your program on the allocated compute resources managed by Slurm
-srun "$ENV/bin/python" "$CODE/stage_12_features.py" --build="$BUILD" --model="chebyshev"
-rsync -av --no-group --no-perms "$BUILD/kidney_ssa" "$ARCHIVE"
+srun "$ENV/bin/python" "$CODE/stage_8_representation.py" --build="$BUILD" --model="spectral"
+rsync -av --no-group --no-perms "$BUILD/kidney_ssa/stage_8_representation/spectral" "$ARCHIVE/kidney_ssa/stage_8_representation"
+srun "$ENV/bin/python" "$CODE/stage_9_pca.py" --build="$BUILD" --model="spectral"
+rsync -av --no-group --no-perms "$BUILD/kidney_ssa/stage_9_pca/spectral" "$ARCHIVE/kidney_ssa/stage_9_pca"
+srun "$ENV/bin/python" "$CODE/stage_10_deep_pca.py" --build="$BUILD" --model="spectral"
+rsync -av --no-group --no-perms "$BUILD/kidney_ssa/stage_10_deep_pca/spectral" "$ARCHIVE/kidney_ssa/stage_10_deep_pca"

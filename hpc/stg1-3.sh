@@ -4,9 +4,9 @@
 #SBATCH --time=72:00:00
 #SBATCH --mail-user=s.sourbron@sheffield.ac.uk
 #SBATCH --mail-type=FAIL,END
-#SBATCH --job-name=stg13-1
-#SBATCH --output=logs/stg13-1.out
-#SBATCH --error=logs/stg13-1.err
+#SBATCH --job-name=stg1-3
+#SBATCH --output=logs/stg1-3.out
+#SBATCH --error=logs/stg1-3.err
 
 # Unsets the CPU binding policy.
 # Some clusters automatically bind threads to cores; unsetting it can 
@@ -34,5 +34,9 @@ BUILD="/mnt/parscratch/users/$(whoami)/data/iBEAt_Build"
 ARCHIVE="login1:/shared/abdominal_imaging/Archive/iBEAt_Build"
 
 # srun runs your program on the allocated compute resources managed by Slurm
-srun "$ENV/bin/python" "$CODE/stage_13_representation.py" --build="$BUILD" --model="spectral"
-rsync -av --no-group --no-perms "$BUILD/kidney_ssa" "$ARCHIVE"
+srun "$ENV/bin/python" "$CODE/stage_1_normalize_controls.py" --build="$BUILD"
+rsync -av --no-group --no-perms "$BUILD/kidney_ssa/stage_1_normalize_controls" "$ARCHIVE/kidney_ssa"
+srun "$ENV/bin/python" "$CODE/stage_2_average_controls.py" --build="$BUILD"
+rsync -av --no-group --no-perms "$BUILD/kidney_ssa/stage_2_average_controls" "$ARCHIVE/kidney_ssa"
+srun "$ENV/bin/python" "$CODE/stage_3_normalize.py" --build="$BUILD"
+rsync -av --no-group --no-perms "$BUILD/kidney_ssa/stage_3_normalize" "$ARCHIVE/kidney_ssa"

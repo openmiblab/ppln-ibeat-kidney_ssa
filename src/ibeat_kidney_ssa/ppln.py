@@ -3,26 +3,29 @@ from miblab import pipe
 
 PIPELINE = 'kidney_ssa'
 
-def run(build, client):
+def run(build, logfile):
     
-    # ppln.stage_1_normalize_controls.run(build)
-    # ppln.stage_2_display_controls.run(build)
-    # ppln.stage_3_average_controls.run(build)
-    # ppln.stage_4_display_average_controls.run(build)
-    # ppln.stage_5_normalize.run(build)
-    # ppln.stage_6_display_normalized.run(build)
-    # ppln.stage_7_extract_features.run(build)
-    # ppln.stage_8_export.run(build)
-    # ppln.stage_9_stack_normalized.run(build) 
-    # ppln.stage_10_dice_matrix.run(build)
-    # ppln.stage_11_hausdorff_matrix.run(build)
-    # ppln.stage_12_features.run(build, client, model='spectral')
-    # ppln.stage_12_features.run(build, client, model='chebyshev')
-    ppln.stage_13_representation.run(build, client, model='spectral')
-    ppln.stage_13_representation.run(build, client, model='chebyshev')
+    # ppln.stage_1_normalize_controls.run(build, logfile)
+    # ppln.stage_2_average_controls.run(build, logfile)
+    # ppln.stage_3_normalize.run(build, logfile)
+
+    # ppln.stage_4_extract_features.run(build, logfile)
+    # ppln.stage_5_export.run(build, logfile)
+    # ppln.stage_6_distance_matrices.run(build, logfile)
+
+    # ppln.stage_7_features.run(build, logfile, model='spectral')
+    ppln.stage_8_representation.run(build, logfile, model='spectral')
+    ppln.stage_9_pca.run(build, logfile, model='spectral')
+    ppln.stage_10_deep_pca.run(build, logfile, model='spectral')
+
+    # ppln.stage_7_features.run(build, logfile, model='chebyshev')
+    # ppln.stage_8_representation.run(build, logfile, model='chebyshev')
+    # ppln.stage_9_pca.run(build, logfile, model='chebyshev')
+    # ppln.stage_10_deep_pca.run(build, logfile, model='chebyshev')
 
 
 if __name__=='__main__':
 
     BUILD = r"C:\Users\md1spsx\Documents\Data\iBEAt_Build"
-    pipe.run_dask_script(run, BUILD, PIPELINE, min_ram_per_worker = 4.0)
+    # pipe.run_client_ppln(run, BUILD, PIPELINE, min_ram_per_worker = 16)
+    pipe.run_ppln(run, BUILD, PIPELINE)

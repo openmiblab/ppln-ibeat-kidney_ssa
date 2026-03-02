@@ -43,13 +43,13 @@ VRANGE = {
 }
 
 
-def run(build):
+def run(build, logfile):
     
     logging.info("Stage 14 --- Clustering kidneys ---")
     dir_output = pipe.stage_output_dir(build, PIPELINE, __file__)
 
     # Inputs
-    masks_path = os.path.join(build, PIPELINE, 'stage_9_stack_normalized', 'normalized_kidney_masks.zarr')
+    masks_path = os.path.join(build, PIPELINE, 'stage_3_normalize', 'normalized_kidney_masks.zarr')
     matrix_csv = {
         'dice': os.path.join(build, PIPELINE, 'stage_10_dice_matrix', 'normalized_kidney_dice.csv'),
         'hausdorff': os.path.join(build, PIPELINE, 'stage_11_hausdorff_matrix', 'normalized_kidney_hausdorff.csv'),
@@ -1001,4 +1001,5 @@ def plot_clusters(zarr_path, output_image_path,
 if __name__ == '__main__':
 
     BUILD = r"C:\Users\md1spsx\Documents\Data\iBEAt_Build"
-    pipe.run_dask_script(run, BUILD, PIPELINE)
+    # pipe.run_client_stage(run, BUILD, PIPELINE, __file__, min_ram_per_worker=16)
+    pipe.run_stage(run, BUILD, PIPELINE, __file__)

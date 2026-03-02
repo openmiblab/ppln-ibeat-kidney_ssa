@@ -10,11 +10,12 @@ from miblab import pipe
 
 PIPELINE = 'kidney_ssa'
 
-def run(build):
+def run(build, logfile):
 
-    logging.info("Stage 8 --- Exporting shape features ---")
-    dir_measure = os.path.join(build, PIPELINE, 'stage_7_extract_features')
+    logging.info("Stage 5 --- Exporting shape features ---")
+    dir_measure = os.path.join(build, PIPELINE, 'stage_4_extract_features')
     dir_output = pipe.stage_output_dir(build, PIPELINE, __file__)
+    # pipe.adjust_workers(client, min_ram_per_worker=4)
     
     today = date.today().strftime("%Y-%m-%d")
 
@@ -66,7 +67,7 @@ def run(build):
     df.rename(columns=new_cols, inplace=True)
     df.to_csv(wide_format_file, index=False)
 
-    logging.info(f"Stage 8. Successfully exported shape features")
+    logging.info(f"Stage 5. Successfully exported shape features")
 
 
 
@@ -92,5 +93,6 @@ def fix_exeter_volunteer(harmonized_id, visit_nr):
 if __name__=='__main__':
 
     BUILD = r"C:\Users\md1spsx\Documents\Data\iBEAt_Build"
-    pipe.run_script(run, BUILD, PIPELINE)
+    # pipe.run_client_stage(run, BUILD, PIPELINE, __file__, min_ram_per_worker=4)
+    pipe.run_client_stage(run, BUILD, PIPELINE, __file__)
         

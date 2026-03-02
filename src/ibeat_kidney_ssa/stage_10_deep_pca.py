@@ -3,20 +3,21 @@ import logging
 
 import miblab_ssa as ssa
 
-from miblab import pipe, display
+from miblab import pipe
+
+from ibeat_kidney_ssa.utils import display
 from ibeat_kidney_ssa.utils.models import MODELS
 
 PIPELINE = 'kidney_ssa'
-DEBUG = False
 
-def run(build, client, model='spectral'):
+def run(build, logfile, model='spectral'):
 
     module = MODELS[model]['module']
 
-    logging.info(f"Stage 15[{model}] --- Starting Non-linear PCA ---")
+    logging.info(f"Stage 10[{model}] --- Starting Non-linear PCA ---")
 
     dir_output = pipe.stage_output_dir(build, PIPELINE, __file__)
-    dir_model_input = os.path.join(build, PIPELINE, 'stage_13_representation', model)
+    dir_model_input = os.path.join(build, PIPELINE, 'stage_8_representation', model)
     dir_model_output = os.path.join(dir_output, model)
     os.makedirs(dir_model_output, exist_ok=True) 
 
@@ -61,16 +62,11 @@ def run(build, client, model='spectral'):
     n_comp = 128
     n_comp_recon = 32
     n_outliers_display = 9
-    if DEBUG:
-        epochs = 100
-        n_outliers = 10
-        max_comp = 15
-    else:
-        epochs = 1000
-        n_outliers = None
-        max_comp = 64
+    epochs = 1000
+    n_outliers = None
+    max_comp = 64
 
-    logging.info(f"Stage 15[{model}].1 Computing Non-linear PCA")
+    logging.info(f"Stage 10[{model}] Computing Non-linear PCA")
 
     ssa.deep_pca_from_features(
         features_zarr_path=features, 
@@ -83,7 +79,7 @@ def run(build, client, model='spectral'):
         model_pth_path=model_checkpoint,
     )
 
-    logging.info(f"Stage 15[{model}].2 Computing PCA reconstructions")
+    logging.info(f"Stage 10[{model}] Computing PCA reconstructions")
 
     ssa.deep_scores_from_features(
         features_zarr_path=features, 
@@ -97,16 +93,16 @@ def run(build, client, model='spectral'):
         features_zarr_path=feature_recon, 
         n_components=n_comp_recon
     )
-    pipe.adjust_workers(client, min_ram_per_worker=2)
+    # pipe.adjust_workers(client, min_ram_per_worker=2)
     ssa.dataset_from_features(
         mask_from_features_func=module.mask_from_features, 
         features_zarr_path=feature_recon, 
         dataset_zarr_path=mask_recon
     )
-    pipe.adjust_workers(client, min_ram_per_worker=16)
+    # pipe.adjust_workers(client, min_ram_per_worker=16)
     display.recon(mask_recon, recon_png, recon_mp4)
 
-    logging.info(f"Stage 15[{model}].3 Computing PCA performance")
+    logging.info(f"Stage 10[{model}] Computing PCA performance")
 
     ssa.deep_pca_performance(
         model_pth_path=model_checkpoint, 
@@ -124,7 +120,7 @@ def run(build, client, model='spectral'):
         n_components=n_comp,
     )
 
-    logging.info(f"Stage 15[{model}].4 Computing reconstruction accuracy")
+    logging.info(f"Stage 10[{model}] Computing reconstruction accuracy")
 
     labels = display.get_outlier_labels(cumulative_mse, n=n_outliers)
     ssa.deep_cumulative_features_from_scores(
@@ -136,9 +132,9 @@ def run(build, client, model='spectral'):
         step_size=1, 
         max_components=max_comp,
     )
-    pipe.adjust_workers(client, min_ram_per_worker=2)
+    # pipe.adjust_workers(client, min_ram_per_worker=2)
     ssa.dataset_from_features(
-        mask_from_features_func=model.mask_from_features, 
+        mask_from_features_func=module.mask_from_features, 
         features_zarr_path=feature_recon_err, 
         dataset_zarr_path=mask_recon_err,
     )
@@ -152,7 +148,7 @@ def run(build, client, model='spectral'):
         hausdorff_csv_path=haus_recon_error, 
         output_image_path=recon_performance_img
     )
-    pipe.adjust_workers(client, min_ram_per_worker=16)
+    # pipe.adjust_workers(client, min_ram_per_worker=16)
     display.recon_err(
         mask_zarr_path=mask_recon_err, 
         dir_png=recon_err_png, 
@@ -161,7 +157,7 @@ def run(build, client, model='spectral'):
         n_components=15,
     )
 
-    logging.info(f"Stage 15[{model}].5 Computing principal modes")
+    logging.info(f"Stage 10[{model}] Computing principal modes")
     
     ssa.deep_modes_from_pca(
         model_pth_path=model_checkpoint, 
@@ -170,13 +166,13 @@ def run(build, client, model='spectral'):
         n_coeffs=15,
         max_coeff=6,
     )
-    pipe.adjust_workers(client, min_ram_per_worker=2)
+    #pipe.adjust_workers(client, min_ram_per_worker=2)
     ssa.dataset_from_features(
-        mask_from_features_func=model.mask_from_features, 
+        mask_from_features_func=module.mask_from_features, 
         features_zarr_path=feature_modes, 
         dataset_zarr_path=mask_modes
     )
-    pipe.adjust_workers(client, min_ram_per_worker=16)
+    #pipe.adjust_workers(client, min_ram_per_worker=16)
     ssa.plot_mask_sections(
         dataset_zarr_path=mask_modes, 
         dir_png=modes_sections_png, 
@@ -198,7 +194,7 @@ def run(build, client, model='spectral'):
     #     dir_png=modes_fingerprints,
     # )
 
-    logging.info("Stage 19 --- Deep PCA succesfully completed ---")
+    logging.info("Stage 10 --- Deep PCA succesfully completed ---")
 
 
 
@@ -208,4 +204,5 @@ if __name__ == '__main__':
     kwargs = {
         "model": {'type': str, 'default': 'spectral', 'help': 'Representation'}
     }
-    pipe.run_dask_stage(run, build, PIPELINE, __file__, min_ram_per_worker=16, **kwargs)
+    # pipe.run_client_stage(run, build, PIPELINE, __file__, min_ram_per_worker=16, **kwargs)
+    pipe.run_stage(run, build, PIPELINE, __file__, **kwargs)

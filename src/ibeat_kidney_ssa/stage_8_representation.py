@@ -8,11 +8,11 @@ from ibeat_kidney_ssa.utils.models import MODELS
 PIPELINE = 'kidney_ssa'
 
 
-def run(build, client, model='spectral'):
+def run(build, logfile, model='spectral'):
 
-    logging.info(f"Stage 13[{model}] Setup")
+    logging.info(f"Stage 8[{model}] Setup")
 
-    dir_input = os.path.join(build, PIPELINE, 'stage_9_stack_normalized')
+    dir_input = os.path.join(build, PIPELINE, 'stage_3_normalize')
     dir_output = pipe.stage_output_dir(build, PIPELINE, __file__)
     dir_model_output = os.path.join(dir_output, model)
     os.makedirs(dir_model_output, exist_ok=True)
@@ -23,17 +23,17 @@ def run(build, client, model='spectral'):
     # Output data
     features = os.path.join(dir_model_output, 'data_features.zarr')
 
-    logging.info(f"Stage 13[{model}].1 Computing features")
+    logging.info(f"Stage 8[{model}] Computing features")
     module = MODELS[model]['module']
     kwargs = MODELS[model]['kwargs']
-    pipe.adjust_workers(client, min_ram_per_worker=2)
+    # pipe.adjust_workers(client, min_ram_per_worker=2)
     ssa.features_from_dataset(
         features_from_mask=module.features_from_mask, 
         masks_zarr_path=masks, 
         output_zarr_path=features, 
         **kwargs,
     )
-    logging.info(f"Stage 13[{model}] Completed")
+    logging.info(f"Stage 8[{model}] Completed")
 
 
 if __name__ == '__main__':
@@ -42,4 +42,5 @@ if __name__ == '__main__':
     kwargs = {
         "model": {'type': str, 'default': 'spectral', 'help': 'Model'}
     }
-    pipe.run_dask_stage(run, BUILD, PIPELINE, __file__, min_ram_per_worker=16, **kwargs)
+    # pipe.run_client_stage(run, BUILD, PIPELINE, __file__, min_ram_per_worker=16, **kwargs)
+    pipe.run_stage(run, BUILD, PIPELINE, __file__, **kwargs)
