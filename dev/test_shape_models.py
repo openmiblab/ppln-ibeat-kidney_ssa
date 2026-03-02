@@ -36,13 +36,12 @@ def display_two_kidneys(build):
     mask = input_root['masks'][mask_idx]
 
     t0 = time.perf_counter()
-    mask_rec = ssa.sdf_ft.smooth_mask(mask, order=18) # 19: n=4019, dice 0.972, 5.1s
+    mask_rec = ssa.sdf_ft.smooth_mask(mask, order=18) # 18: n=3340, dice 0.970, s5.9s
+    # mask_rec = ssa.sdf_legendre.smooth_mask(mask, order=18) # 18: n=3343, dice 0.945, 258s
     # mask_rec = ssa.sdf_cheby.smooth_mask(mask, order=27)  # 27: n=4060, dice 0.973, 261s
-    # mask_rec = ssa.sdf_legendre.smooth_mask(mask, order=27) # 27: n=4060, dice 0.974, 250s
     # mask_rec = ssa.sdf_spline.smooth_mask(mask, order=16) # : n=4096, dice 0.974, 19s
     # mask_rec = ssa.sdf_pspline.smooth_mask(mask, orders=(6, 12, 18)) # : n=7776, dice 0.979, s
     # mask_rec = ssa.sdf_rbf.smooth_mask(mask, order=16, epsilon=4)  #16 : n=4096, dice , s
-
     # mask_rec = sdf_ft_simple.smooth_mask(mask, order=16) # 16: n=4098, dice 0.972, 5.5s
     # mask_rec = ssa.pdm.smooth_mask(mask, subdivisions=2) # 4, n=1926
     # mask_rec = ssa.sdf_wvlt.smooth_mask(mask, min_level=3, order=9) # dice 0.993, 11MB

@@ -14,7 +14,7 @@ MODELS = {
     'chebyshev':{
         'module': ssa.sdf_cheby,
         'kwargs': {
-            'order': 27 
+            'order': 18
         },
         'min_order': 5,
         'max_order': 32, 
@@ -23,11 +23,11 @@ MODELS = {
     'legendre':{
         'module': ssa.sdf_legendre,
         'kwargs': {
-            'order': 27
+            'order': 18
         },
         'min_order': 10,
         'max_order': 36,
-        'ram': 4,
+        'ram': 2,
     },
     'spline':{
         'module': ssa.sdf_spline,
