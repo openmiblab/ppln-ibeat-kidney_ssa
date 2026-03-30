@@ -46,6 +46,7 @@ def run(build, logfile, model='spectral'):
 
     # Output - images
     pca_performance = os.path.join(dir_model_output, 'imgs_performance.png')
+    pca_performance_100 = os.path.join(dir_model_output, 'imgs_performance_100.png')
     modes_png = os.path.join(dir_model_output, 'imgs_modes')
     recon_png = os.path.join(dir_model_output, 'imgs_recon')
     recon_err_png = os.path.join(dir_model_output, 'imgs_recon_err')
@@ -58,21 +59,13 @@ def run(build, logfile, model='spectral'):
     recon_mp4 = os.path.join(dir_model_output, 'movie_recon.mp4')
     recon_err_mp4 = os.path.join(dir_model_output, 'movie_recon_err.mp4')
 
-    # Hyperparameters
-    n_comp = 128
-    n_comp_recon = 32
-    n_outliers_display = 9
-    epochs = 1000
-    n_outliers = None
-    max_comp = 64
-
     logging.info(f"Stage 10[{model}] Computing Non-linear PCA")
 
     ssa.deep_pca_from_features(
         features_zarr_path=features, 
         model_pth_path=model_checkpoint, 
-        n_components=n_comp, 
-        epochs=epochs
+        n_components=128, 
+        epochs=1000 # reduce for debugging
     )
     ssa.add_deep_pca_metrics(
         features_zarr_path=features, 
@@ -91,15 +84,13 @@ def run(build, logfile, model='spectral'):
         model_pth_path=model_checkpoint, 
         scores_csv_path=scores, 
         features_zarr_path=feature_recon, 
-        n_components=n_comp_recon
+        n_components=100,
     )
-    # pipe.adjust_workers(client, min_ram_per_worker=2)
     ssa.dataset_from_features(
         mask_from_features_func=module.mask_from_features, 
         features_zarr_path=feature_recon, 
         dataset_zarr_path=mask_recon
     )
-    # pipe.adjust_workers(client, min_ram_per_worker=16)
     display.recon(mask_recon, recon_png, recon_mp4)
 
     logging.info(f"Stage 10[{model}] Computing PCA performance")
@@ -110,19 +101,28 @@ def run(build, logfile, model='spectral'):
         gt_features_zarr_path=features, 
         marginal_mse_csv_path=marginal_mse,
         cumulative_mse_csv_path=cumulative_mse, 
-        n_components=n_comp,
     )
     ssa.plot_deep_pca_performance(
         model_pth_path=model_checkpoint, 
         output_image_path=pca_performance, 
         marginal_mse_path=marginal_mse,  
         cumulative_mse_path=cumulative_mse, 
-        n_components=n_comp,
+    )
+    ssa.plot_deep_pca_performance(
+        model_pth_path=model_checkpoint, 
+        output_image_path=pca_performance_100, 
+        marginal_mse_path=marginal_mse,  
+        cumulative_mse_path=cumulative_mse, 
+        n_components=100,
     )
 
     logging.info(f"Stage 10[{model}] Computing reconstruction accuracy")
 
-    labels = display.get_outlier_labels(cumulative_mse, n=n_outliers)
+    labels = display.get_outlier_labels( 
+        cumulative_mse, 
+        # n=6, # for debugging only
+        column_idx=25, 
+    )
     ssa.deep_cumulative_features_from_scores(
         model_pth_path=model_checkpoint, 
         scores_csv_path=scores, 
@@ -130,9 +130,8 @@ def run(build, logfile, model='spectral'):
         output_zarr_path=feature_recon_err, 
         target_labels=labels, 
         step_size=1, 
-        max_components=max_comp,
+        max_components=100,
     )
-    # pipe.adjust_workers(client, min_ram_per_worker=2)
     ssa.dataset_from_features(
         mask_from_features_func=module.mask_from_features, 
         features_zarr_path=feature_recon_err, 
@@ -148,13 +147,13 @@ def run(build, logfile, model='spectral'):
         hausdorff_csv_path=haus_recon_error, 
         output_image_path=recon_performance_img
     )
-    # pipe.adjust_workers(client, min_ram_per_worker=16)
     display.recon_err(
         mask_zarr_path=mask_recon_err, 
         dir_png=recon_err_png, 
         movie_file=recon_err_mp4, 
-        n_samples=n_outliers_display,
-        n_components=15,
+        n_samples=6,
+        n_components=40,
+        step_size=5,
     )
 
     logging.info(f"Stage 10[{model}] Computing principal modes")
@@ -162,33 +161,32 @@ def run(build, logfile, model='spectral'):
     ssa.deep_modes_from_pca(
         model_pth_path=model_checkpoint, 
         modes_zarr_path=feature_modes, 
-        n_components=8, 
+        n_components=16, 
         n_coeffs=15,
         max_coeff=6,
     )
-    #pipe.adjust_workers(client, min_ram_per_worker=2)
     ssa.dataset_from_features(
         mask_from_features_func=module.mask_from_features, 
         features_zarr_path=feature_modes, 
         dataset_zarr_path=mask_modes
     )
-    #pipe.adjust_workers(client, min_ram_per_worker=16)
     ssa.plot_mask_sections(
         dataset_zarr_path=mask_modes, 
         dir_png=modes_sections_png, 
+        n_components=8,
     )
     display.modes(
         modes_zarr_path=mask_modes, 
         dir_png=modes_png, 
         movie_file=modes_mp4,
     )
-    # # This is not very informative at the moment
-    # pipe.adjust_workers(client, min_ram_per_worker=2)
-    # ssa.dataset_shapes(
-    #     dataset_zarr_path=mask_modes, 
-    #     dir_csv=modes_shape_features, 
-    # )
-    # pipe.adjust_workers(client, min_ram_per_worker=16)
+
+    logging.info(f"Stage 11[{model}] Characterizing principal modes")
+
+    ssa.dataset_shapes(
+        dataset_zarr_path=mask_modes, 
+        dir_csv=modes_shape_features, 
+    )
     # ssa.plot_shape_fingerprints(
     #     dir_csv=modes_shape_features,
     #     dir_png=modes_fingerprints,
@@ -202,7 +200,6 @@ if __name__ == '__main__':
 
     build = r"C:\Users\md1spsx\Documents\Data\iBEAt_Build"
     kwargs = {
-        "model": {'type': str, 'default': 'spectral', 'help': 'Representation'}
+        "model": {'type': str, 'default': 'legendre', 'help': 'Representation'}
     }
-    # pipe.run_client_stage(run, build, PIPELINE, __file__, min_ram_per_worker=16, **kwargs)
     pipe.run_stage(run, build, PIPELINE, __file__, **kwargs)

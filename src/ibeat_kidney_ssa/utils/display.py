@@ -45,27 +45,71 @@ def recon(mask_path, dir_png, movie_file):
     mp4.images_to_video(dir_png, movie_file, fps=16)
 
 
+# def recon_err(
+#     mask_zarr_path=None, 
+#     dir_png=None, 
+#     movie_file=None, 
+#     n_samples=None, 
+#     n_components=None,
+# ):
+#     recon = zarr.open(mask_zarr_path, mode='r')
+#     if n_samples is None:
+#         masks = recon['masks'][:]   
+#     else:
+#         masks = recon['masks'][:n_samples, ...]
+#     cols = recon.attrs['saved_steps'][:]
+#     if n_components is not None:
+#         if n_components + 1 < masks.shape[1] - 1:
+#             idx = np.r_[:n_components+1, -1]
+#             masks = masks[:, idx, ...]
+#             cols = np.array(cols)[idx].tolist()
+#     masks = masks.transpose(1, 0, 2, 3, 4)
+#     n_rows = masks.shape[1] 
+#     labels = np.array([[f"K{y}: {x}" for y in range(n_rows)] for x in cols])
+#     pvplot.rotating_masks_grid(dir_png, masks, labels, nviews=25)
+#     mp4.images_to_video(dir_png, movie_file, fps=16)
+
+
 def recon_err(
     mask_zarr_path=None, 
     dir_png=None, 
     movie_file=None, 
     n_samples=None, 
     n_components=None,
+    step_size=1, 
 ):
     recon = zarr.open(mask_zarr_path, mode='r')
+    
     if n_samples is None:
         masks = recon['masks'][:]   
     else:
         masks = recon['masks'][:n_samples, ...]
+    
     cols = recon.attrs['saved_steps'][:]
+    total_components = masks.shape[1]
+
+    # Handle component slicing with step_size
     if n_components is not None:
-        if n_components + 1 < masks.shape[1] - 1:
-            idx = np.r_[:n_components+1, -1]
-            masks = masks[:, idx, ...]
-            cols = np.array(cols)[idx].tolist()
+        # Limit the range by n_components, then apply step_size
+        stop_idx = min(n_components + 1, total_components - 1)
+        idx = np.arange(0, stop_idx, step_size)
+    else:
+        # Apply step_size to all but the last component
+        idx = np.arange(0, total_components - 1, step_size)
+    
+    # Always append the very last component (index -1)
+    idx = np.append(idx, total_components - 1)
+    
+    # Filter masks and labels
+    masks = masks[:, idx, ...]
+    cols = np.array(cols)[idx].tolist()
+
     masks = masks.transpose(1, 0, 2, 3, 4)
     n_rows = masks.shape[1] 
+    
+    # Generate labels matching the filtered columns
     labels = np.array([[f"K{y}: {x}" for y in range(n_rows)] for x in cols])
+    
     pvplot.rotating_masks_grid(dir_png, masks, labels, nviews=25)
     mp4.images_to_video(dir_png, movie_file, fps=16)
 
@@ -74,9 +118,12 @@ def modes(
     modes_zarr_path: str = None, 
     dir_png: str = None, 
     movie_file: str = None,
+    n_components: int = None,
 ):
     modes = zarr.open(modes_zarr_path, mode='r')
     masks = modes['masks'][:]
+    if n_components is not None:
+        masks = masks[:, :n_components, ...]
     n_rows = masks.shape[1]
     cols = np.array(modes.attrs['coeffs'][:])
     labels = np.array([[f"C{y}: {round(x, 1)} x sd" for y in range(n_rows)] for x in cols])

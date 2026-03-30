@@ -5,6 +5,8 @@ import logging
 import colorsys
 from collections import Counter, defaultdict
 from itertools import product
+from pathlib import Path
+import re
 
 # --- Third-Party Libraries ---
 import zarr
@@ -35,7 +37,7 @@ PIPELINE = 'kidney_ssa'
 
 STAGE = {
     'spectral': 12,
-    'chebyshev': 13,
+    'legendre': 13,
 }
 VRANGE = {
     'dice': [0.5, 0.9],
@@ -44,6 +46,61 @@ VRANGE = {
 
 
 def run(build, logfile):
+    logging.info("Stage 11 --- Clustering kidneys ---")
+    dir_output = pipe.stage_output_dir(build, PIPELINE, __file__)
+    dir_input = os.path.join(build, PIPELINE)
+
+    for stage in ['stage_9_pca', 'stage_10_deep_pca']:
+        for model in [ 'legendre', 'spectral']:
+            for file in ['table_normalized_scores', 'table_scores']:
+                input_csv = os.path.join(dir_input, stage, model, f"{file}.csv")
+                output_csv = os.path.join(dir_output, stage, model, f"{file}_subject.csv")
+                transform_kidney_to_subject_csv(input_csv, output_csv)
+
+
+
+
+def transform_kidney_to_subject_csv(input_csv, output_csv):
+    # 1. Load the data
+    df = pd.read_csv(input_csv)
+    id_col = df.columns[0]
+    biomarker_cols = list(df.columns[1:])
+    
+    # 2. Split 'patientid-L' into 'PatientID' and 'Side'
+    df[['PatientID', 'Side']] = df[id_col].str.rsplit('-', n=1, expand=True)
+    
+    # 3. Pivot the data
+    pivoted = df.pivot(index='PatientID', columns='Side', values=biomarker_cols)
+    
+    # 4. Create new column names (e.g., LPC_1, RPC_1)
+    # The columns in pivoted are currently a MultiIndex: (Biomarker, Side)
+    new_cols = [f"{side}{biomarker}" for biomarker, side in pivoted.columns]
+    pivoted.columns = new_cols
+    
+    # 5. CUSTOM REORDERING LOGIC
+    def sort_key(col_name):
+        # Extract the number from the column name (e.g., '1' from 'LPC_1')
+        # We use a regex to find digits at the end of the string
+        match = re.search(r'(\d+)$', col_name)
+        num = int(match.group(1)) if match else 0
+        
+        # We want to group by the number first, then by the side (L before R)
+        # 'L' comes before 'R' alphabetically, so we can just return (number, col_name)
+        return (num, col_name)
+
+    # Apply the sort to the column list
+    sorted_columns = sorted(pivoted.columns, key=sort_key)
+    pivoted = pivoted[sorted_columns]
+    
+    # 6. Save to CSV
+    os.makedirs(Path(output_csv).parent, exist_ok=True)
+    pivoted.reset_index().to_csv(output_csv, index=False)
+    print(f"Successfully saved reordered data to: {output_csv}")
+
+
+
+
+def run_v1(build, logfile):
     
     logging.info("Stage 14 --- Clustering kidneys ---")
     dir_output = pipe.stage_output_dir(build, PIPELINE, __file__)
@@ -1000,6 +1057,5 @@ def plot_clusters(zarr_path, output_image_path,
 
 if __name__ == '__main__':
 
-    BUILD = r"C:\Users\md1spsx\Documents\Data\iBEAt_Build"
-    # pipe.run_client_stage(run, BUILD, PIPELINE, __file__, min_ram_per_worker=16)
-    pipe.run_stage(run, BUILD, PIPELINE, __file__)
+    build = r"C:\Users\md1spsx\Documents\Data\iBEAt_Build"
+    pipe.run_stage(run, build, PIPELINE, __file__)
