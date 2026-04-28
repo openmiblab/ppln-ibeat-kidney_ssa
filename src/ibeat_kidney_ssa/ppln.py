@@ -14,8 +14,8 @@ def run(build, logfile):
     # ppln.stage_6_distance_matrices.run(build, logfile)
 
     # ppln.stage_7_features.run(build, logfile, model='spectral')
-    ppln.stage_8_representation.run(build, logfile, model='spectral')
-    ppln.stage_9_pca.run(build, logfile, model='spectral')
+    # ppln.stage_8_representation.run(build, logfile, model='spectral')
+    # ppln.stage_9_pca.run(build, logfile, model='spectral')
     ppln.stage_10_deep_pca.run(build, logfile, model='spectral')
 
     # ppln.stage_7_features.run(build, logfile, model='chebyshev')
@@ -23,9 +23,13 @@ def run(build, logfile):
     # ppln.stage_9_pca.run(build, logfile, model='chebyshev')
     # ppln.stage_10_deep_pca.run(build, logfile, model='chebyshev')
 
+    # ppln.stage_7_features.run(build, logfile, model='spectral')
+    # ppln.stage_8_representation.run(build, logfile, model='spectral')
+    # ppln.stage_9_pca.run(build, logfile, model='spectral')
+    ppln.stage_10_deep_pca.run(build, logfile, model='legendre')
 
 if __name__=='__main__':
 
-    BUILD = r"C:\Users\md1spsx\Documents\Data\iBEAt_Build"
+    BUILD = r"C:\Users\md1jdsp\Documents\Data\iBEAt_Build"
     # pipe.run_client_ppln(run, BUILD, PIPELINE, min_ram_per_worker = 16)
     pipe.run_ppln(run, BUILD, PIPELINE)

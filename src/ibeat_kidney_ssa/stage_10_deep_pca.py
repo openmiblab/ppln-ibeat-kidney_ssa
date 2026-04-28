@@ -61,11 +61,11 @@ def run(build, logfile, model='spectral'):
 
     logging.info(f"Stage 10[{model}] Computing Non-linear PCA")
 
-    ssa.deep_pca_from_features(
+    ssa.deep_cv_pca_from_features(
         features_zarr_path=features, 
         model_pth_path=model_checkpoint, 
         n_components=128, 
-        epochs=1000 # reduce for debugging
+        epochs=100 # reduce for debugging
     )
     ssa.add_deep_pca_metrics(
         features_zarr_path=features, 
@@ -100,7 +100,8 @@ def run(build, logfile, model='spectral'):
         scores_csv_path=scores, 
         gt_features_zarr_path=features, 
         marginal_mse_csv_path=marginal_mse,
-        cumulative_mse_csv_path=cumulative_mse, 
+        cumulative_mse_csv_path=cumulative_mse,
+        n_components= 128 
     )
     ssa.plot_deep_pca_performance(
         model_pth_path=model_checkpoint, 
@@ -121,7 +122,7 @@ def run(build, logfile, model='spectral'):
     labels = display.get_outlier_labels( 
         cumulative_mse, 
         # n=6, # for debugging only
-        column_idx=25, 
+        column_idx=127, 
     )
     ssa.deep_cumulative_features_from_scores(
         model_pth_path=model_checkpoint, 
@@ -130,7 +131,7 @@ def run(build, logfile, model='spectral'):
         output_zarr_path=feature_recon_err, 
         target_labels=labels, 
         step_size=1, 
-        max_components=100,
+        max_components=25,
     )
     ssa.dataset_from_features(
         mask_from_features_func=module.mask_from_features, 
@@ -173,7 +174,7 @@ def run(build, logfile, model='spectral'):
     ssa.plot_mask_sections(
         dataset_zarr_path=mask_modes, 
         dir_png=modes_sections_png, 
-        n_components=8,
+        n_components=16,
     )
     display.modes(
         modes_zarr_path=mask_modes, 
@@ -198,7 +199,7 @@ def run(build, logfile, model='spectral'):
 
 if __name__ == '__main__':
 
-    build = r"C:\Users\md1spsx\Documents\Data\iBEAt_Build"
+    build = r"C:\Users\md1jdsp\Documents\Data\iBEAt_Build"
     kwargs = {
         "model": {'type': str, 'default': 'legendre', 'help': 'Representation'}
     }
