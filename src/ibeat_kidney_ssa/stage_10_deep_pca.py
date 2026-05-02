@@ -65,6 +65,7 @@ def run(build, logfile, model='spectral'):
         features_zarr_path=features, 
         model_pth_path=model_checkpoint, 
         n_components=128, 
+        cov_weight=0.01,
         epochs=100 # reduce for debugging
     )
     ssa.add_deep_pca_metrics(
