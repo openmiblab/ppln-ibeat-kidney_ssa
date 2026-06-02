@@ -60,6 +60,13 @@ def run(build, logfile, model='spectral'):
 
     logging.info(f"Stage 9[{model}] Computing linear PCA")
 
+    ssa.pca_cv_from_features(
+        features_zarr_path=features, 
+        output_plot_path=os.path.join(dir_model_output, 'nr_of_components.png'),
+    )
+
+    return
+
     ssa.pca_from_features(
         features_zarr_path=features, 
         output_zarr_path=pca,
@@ -192,6 +199,6 @@ if __name__ == '__main__':
 
     build = r"C:\Users\md1spsx\Documents\Data\iBEAt_Build"
     kwargs = {
-        "model": {'type': str, 'default': 'legendre', 'help': 'Representation'}
+        "model": {'type': str, 'default': 'spectral', 'help': 'Representation'}
     }
     pipe.run_stage(run, build, PIPELINE, __file__, **kwargs)
