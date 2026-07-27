@@ -60,12 +60,18 @@ def run(build, logfile, model='spectral'):
 
     logging.info(f"Stage 9[{model}] Computing linear PCA")
 
-    ssa.pca_cv_from_features(
+    # ssa.pca_cv_from_features(
+    #     features_zarr_path=features, 
+    #     output_plot_path=os.path.join(dir_model_output, 'nr_of_components.png'),
+    # )
+
+    # return
+
+    ssa.pca_cv_from_features_joao(
         features_zarr_path=features, 
         output_plot_path=os.path.join(dir_model_output, 'nr_of_components.png'),
     )
 
-    return
 
     ssa.pca_from_features(
         features_zarr_path=features, 
@@ -75,32 +81,33 @@ def run(build, logfile, model='spectral'):
     logging.info(f"Stage 9[{model}] Computing PCA reconstructions")
 
     ssa.scores_from_features(
-        features_zarr_path=features, 
-        pca_zarr_path=pca, 
+        features_zarr_path=features,
+        pca_zarr_path=pca,
         scores_csv_path=scores,
         normalized_scores_csv_path=normalized_scores,
     )
-    ssa.features_from_scores(
-        pca_zarr_path=pca, 
-        scores_csv_path=scores, 
-        output_zarr_path=feature_recon, 
-        n_components=100,
-    )
-    ssa.dataset_from_features(
-        mask_from_features_func=module.mask_from_features, 
-        features_zarr_path=feature_recon, 
-        dataset_zarr_path=mask_recon
-    )
-    display.recon(mask_recon, recon_png, recon_mp4)
+    # ssa.features_from_scores(
+    #     pca_zarr_path=pca, 
+    #     scores_csv_path=scores, 
+    #     output_zarr_path=feature_recon, 
+    #     n_components=100,
+    # )
+    # ssa.dataset_from_features(
+    #     mask_from_features_func=module.mask_from_features, 
+    #     features_zarr_path=feature_recon, 
+    #     dataset_zarr_path=mask_recon
+    # )
+    # display.recon(mask_recon, recon_png, recon_mp4)
 
     logging.info(f"Stage 9[{model}] Computing PCA performance")
 
     ssa.pca_performance(
-        pca_zarr_path=pca, 
-        scores_csv_path=scores, 
-        gt_features_zarr_path=features, 
-        marginal_mse_csv_path=marginal_mse, 
-        cumulative_mse_csv_path=cumulative_mse, 
+        pca_zarr_path=pca,
+        scores_csv_path=scores,
+        gt_features_zarr_path=features,
+        marginal_mse_csv_path=marginal_mse,
+        cumulative_mse_csv_path=cumulative_mse,
+        n_components=100,
     )
     ssa.plot_pca_performance(
         pca, 
@@ -115,6 +122,8 @@ def run(build, logfile, model='spectral'):
         cumulative_mse, 
         n_components=100,
     )
+
+    return
 
     logging.info(f"Stage 9[{model}] Computing reconstruction accuracy")
 
@@ -197,7 +206,7 @@ def run(build, logfile, model='spectral'):
 
 if __name__ == '__main__':
 
-    build = r"C:\Users\md1spsx\Documents\Data\iBEAt_Build"
+    build = r"C:\Users\md1jdsp\Documents\Data\iBEAt_Build"
     kwargs = {
         "model": {'type': str, 'default': 'spectral', 'help': 'Representation'}
     }
