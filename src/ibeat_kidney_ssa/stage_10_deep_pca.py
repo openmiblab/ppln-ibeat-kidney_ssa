@@ -81,18 +81,18 @@ def run(build, logfile, model='spectral'):
         scores_csv_path=scores,
         normalized_scores_csv_path=normalized_scores,
     )
-    ssa.deep_features_from_scores(
-        model_pth_path=model_checkpoint, 
-        scores_csv_path=scores, 
-        features_zarr_path=feature_recon, 
-        n_components=100,
-    )
-    ssa.dataset_from_features(
-        mask_from_features_func=module.mask_from_features, 
-        features_zarr_path=feature_recon, 
-        dataset_zarr_path=mask_recon
-    )
-    display.recon(mask_recon, recon_png, recon_mp4)
+    # ssa.deep_features_from_scores(
+    #     model_pth_path=model_checkpoint, 
+    #     scores_csv_path=scores, 
+    #     features_zarr_path=feature_recon, 
+    #     n_components=100,
+    # )
+    # ssa.dataset_from_features(
+    #     mask_from_features_func=module.mask_from_features, 
+    #     features_zarr_path=feature_recon, 
+    #     dataset_zarr_path=mask_recon
+    # )
+    # display.recon(mask_recon, recon_png, recon_mp4)
 
     logging.info(f"Stage 10[{model}] Computing PCA performance")
 
@@ -117,7 +117,7 @@ def run(build, logfile, model='spectral'):
         cumulative_mse_path=cumulative_mse, 
         n_components=100,
     )
-
+    return
     logging.info(f"Stage 10[{model}] Computing reconstruction accuracy")
 
     labels = display.get_outlier_labels( 
