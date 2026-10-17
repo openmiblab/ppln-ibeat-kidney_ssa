@@ -24,8 +24,6 @@ module load Anaconda3/2024.02-1
 module load Python/3.10.8-GCCcore-12.2.0 # essential to load latest GCC
 
 # Define path variables here
-ENV="/mnt/parscratch/users/$(whoami)/envs/kssa"
-CODE="/mnt/parscratch/users/$(whoami)/scripts/ppln-ibeat-kidney_ssa/src/ibeat_kidney_ssa"
 BUILD="/mnt/parscratch/users/$(whoami)/data/iBEAt_Build"
 ARCHIVE="login1:/shared/abdominal_imaging/Archive/iBEAt_Build"
 
